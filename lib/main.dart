@@ -1,31 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'teacher/dashboard_screen.dart';
+import 'teacher/calendar_screen.dart';
+import 'teacher/lesson_detail_screen.dart';
+import 'teacher/attendance_screen.dart';
+import 'teacher/leave_registration_screen.dart';
+import 'teacher/reports_screen.dart';
+import 'providers/lesson_provider.dart';
 
-import 'package:tlu_schedule_management/teacher/teacher_dashboard.dart';
-import 'auth/login_screen.dart' hide AdminDashboard;
-//import 'admin/admin_dashboard.dart';
-
-void main() {
-  runApp(const ScheduleApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('vi', null);
+  runApp(const MyApp());
 }
 
-class ScheduleApp extends StatelessWidget {
-  const ScheduleApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Quản lý Lịch trình Giảng dạy',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1976D2),
-          brightness: Brightness.light,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LessonProvider()),
+      ],
+      child: MaterialApp.router(
+        title: 'TLU Schedule Management',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6B46C1), // Purple theme
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          fontFamily: 'Roboto',
         ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
+        routerConfig: _router,
       ),
-      home: const TeacherDashboard(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
+
+final GoRouter _router = GoRouter(
+  initialLocation: '/dashboard',
+  routes: [
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => const DashboardScreen(),
+    ),
+    GoRoute(
+      path: '/calendar',
+      builder: (context, state) => const CalendarScreen(),
+    ),
+    GoRoute(
+      path: '/lesson-detail/:lessonId',
+      builder: (context, state) {
+        final lessonId = state.pathParameters['lessonId']!;
+        return LessonDetailScreen(lessonId: lessonId);
+      },
+    ),
+    GoRoute(
+      path: '/attendance',
+      builder: (context, state) => const AttendanceScreen(),
+    ),
+    GoRoute(
+      path: '/leave-registration',
+      builder: (context, state) => const LeaveRegistrationScreen(),
+    ),
+    GoRoute(
+      path: '/reports',
+      builder: (context, state) => const ReportsScreen(),
+    ),
+  ],
+);

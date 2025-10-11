@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'session_detail_screen.dart';
 
 class TeacherSchedule extends StatefulWidget {
   const TeacherSchedule({super.key});
@@ -273,22 +272,7 @@ class _TeacherScheduleState extends State<TeacherSchedule> {
         statusIcon = Icons.help;
     }
 
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SessionDetailScreen(
-              subject: classInfo['subject'],
-              className: classInfo['class'],
-              room: classInfo['room'],
-              timeRange: classInfo['time'],
-              date: _selectedDate,
-            ),
-          ),
-        );
-      },
-      child: Container(
+    return Container(
       margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -343,7 +327,6 @@ class _TeacherScheduleState extends State<TeacherSchedule> {
           ),
         ],
       ),
-    )
     );
   }
 

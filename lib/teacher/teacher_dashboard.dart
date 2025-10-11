@@ -3,8 +3,6 @@ import 'teacher_schedule.dart';
 import 'attendance_screen.dart';
 import 'leave_request_screen.dart';
 import 'makeup_class_screen.dart';
-import 'subject_calendar_screen.dart';
-import 'reports_screen.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -219,24 +217,6 @@ class TeacherHome extends StatelessWidget {
                       () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const TeacherSchedule()),
-                  ),
-                ),
-                _buildActionCard(
-                  'Lịch theo môn',
-                  Icons.view_week,
-                  Colors.teal,
-                      () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SubjectCalendarScreen()),
-                  ),
-                ),
-                _buildActionCard(
-                  'Báo cáo',
-                  Icons.analytics,
-                  Colors.indigo,
-                      () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ReportsScreen()),
                   ),
                 ),
               ],
