@@ -1,5 +1,5 @@
 name: tlu_schedule_management
-description: "A new Flutter project."
+description: "Hệ thống quản lý lịch trình giảng dạy cho Trường Đại học Thủy lợi"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,6 +34,29 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # HTTP & API
+  http: ^1.2.2
+  dio: ^5.4.3+1
+  
+  # Local Storage
+  shared_preferences: ^2.2.3
+  sqflite: ^2.3.3+1
+  
+  # UI Components
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.3.1
+  
+  # Date & Time
+  intl: ^0.19.0
+  table_calendar: ^3.0.9
+  
+  # Firebase - Chỉ dùng Firestore
+  firebase_core: ^2.24.1
+  cloud_firestore: ^4.13.6
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +81,15 @@ flutter:
   uses-material-design: true
   assets:
       - assets/images/
+      - seed/users.json
+      - seed/departments.json
+      - seed/subjects.json
+      - seed/classrooms.json
+      - seed/rooms.json
+      - seed/teachingAssignments.json
+      - seed/schedules.json
+      - seed/attendance.json
+      - seed/leaveRequests.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

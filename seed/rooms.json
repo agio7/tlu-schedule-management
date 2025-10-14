@@ -1,0 +1,7 @@
+[
+  {"id":"room_001","name":"Phòng A101","code":"A101","building":"A","capacity":50,"type":"lecture","equipment":["Projector","Whiteboard","Mic"],"isAvailable":true,"createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"room_002","name":"Phòng Lab B201","code":"B201","building":"B","capacity":30,"type":"lab","equipment":["PCs","Projector","Whiteboard"],"isAvailable":true,"createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"room_003","name":"Phòng C301","code":"C301","building":"C","capacity":40,"type":"lecture","equipment":["Projector","Whiteboard"],"isAvailable":true,"createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}}
+]
+
+

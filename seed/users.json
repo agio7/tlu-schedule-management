@@ -1,0 +1,48 @@
+[
+  {
+    "id": "user_001",
+    "email": "admin@tlu.edu.vn",
+    "fullName": "Nguyễn Văn Admin",
+    "role": "admin",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456789",
+    "isActive": true,
+    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
+    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+  },
+  {
+    "id": "user_002",
+    "email": "head.cntt@tlu.edu.vn",
+    "fullName": "Trần Thị Trưởng Khoa CNTT",
+    "role": "department_head",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456790",
+    "isActive": true,
+    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
+    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+  },
+  {
+    "id": "user_003",
+    "email": "teacher1@tlu.edu.vn",
+    "fullName": "Lê Văn Giảng Viên 1",
+    "role": "teacher",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456791",
+    "isActive": true,
+    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
+    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+  },
+  {
+    "id": "user_004",
+    "email": "teacher2@tlu.edu.vn",
+    "fullName": "Phạm Thị Giảng Viên 2",
+    "role": "teacher",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456792",
+    "isActive": true,
+    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
+    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+  }
+]
+
+

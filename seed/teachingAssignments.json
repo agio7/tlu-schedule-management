@@ -1,0 +1,6 @@
+[
+  {"id":"assign_001","subjectId":"subj_001","classroomId":"class_001","teacherId":"user_003","expectedSessions":15,"hoursPerSession":2,"startWeek":1,"endWeek":8,"dayOfWeek":2,"periodSlots":[1,2],"createdAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"assign_002","subjectId":"subj_002","classroomId":"class_002","teacherId":"user_004","expectedSessions":15,"hoursPerSession":2,"startWeek":1,"endWeek":8,"dayOfWeek":4,"periodSlots":[3,4],"createdAt":{"_seconds":0,"_nanoseconds":0}}
+]
+
+

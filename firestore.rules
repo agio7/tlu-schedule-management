@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Get current user doc
+    function currentUser() {
+      return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)) : null;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && currentUser().data.role == role;
+    }
+
+    function inSameDepartment(departmentId) {
+      return isSignedIn() && currentUser().data.departmentId == departmentId;
+    }
+
+    // Public read-only configs
+    match /departments/{deptId} {
+      allow read: if true;
+      allow create, update, delete: if hasRole('admin') || (hasRole('department_head') && inSameDepartment(request.resource.data.departmentId));
+    }
+
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create, update, delete: if hasRole('admin');
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      // A user can update their own profile (not role)
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+        !(request.resource.data.role in ['admin','department_head','teacher']) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['fullName','phoneNumber','avatarUrl','isActive','updatedAt']);
+      // Admin can manage any user; department head can manage teachers in their department (no role elevation to admin)
+      allow create, delete, update: if hasRole('admin') ||
+        (hasRole('department_head') && request.resource.data.role == 'teacher' && inSameDepartment(request.resource.data.departmentId));
+    }
+
+    // Subjects
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole('admin') || (hasRole('department_head') && inSameDepartment(request.resource.data.departmentId));
+    }
+
+    // Classrooms
+    match /classrooms/{classId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole('admin') || (hasRole('department_head') && inSameDepartment(request.resource.data.departmentId));
+    }
+
+    // Teaching assignments (input from PĐT)
+    match /teachingAssignments/{assignId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole('admin') || hasRole('department_head');
+    }
+
+    // Schedules - teachers can manage their own schedules content/progress
+    match /schedules/{scheduleId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole('admin') || hasRole('department_head') ||
+        (isSignedIn() && request.resource.data.teacherId == request.auth.uid);
+    }
+
+    // Attendance - bound to schedule ownership
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() &&
+        get(/databases/$(database)/documents/schedules/$(request.resource.data.scheduleId)).data.teacherId == request.auth.uid;
+    }
+
+    // Leave requests
+    match /leaveRequests/{reqId} {
+      allow read: if isSignedIn();
+      // Owner can create/cancel; approvers (admin/department_head) can approve
+      allow create: if isSignedIn() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if (isSignedIn() && request.resource.data.teacherId == request.auth.uid) || hasRole('admin') || hasRole('department_head');
+      allow delete: if hasRole('admin');
+    }
+
+    // Notifications (read per user)
+    match /notifications/{notiId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if hasRole('admin');
+    }
+  }
+}
+
+
