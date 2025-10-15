@@ -1,8 +1,12 @@
+// models/user.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class User {
   final String id;
   final String email;
   final String fullName;
-  final String role; // 'admin', 'teacher', 'department_head'
+  final String role;
   final String? departmentId;
   final String? phoneNumber;
   final String? avatar;
@@ -21,20 +25,37 @@ class User {
     required this.updatedAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  // PHIÊN BẢN CẬP NHẬT - AN TOÀN HƠN
+  factory User.fromJson(String id, Map<String, dynamic> json) {
+    // Hàm an toàn để chuyển đổi Timestamp sang DateTime
+    DateTime parseTimestamp(dynamic timestamp) {
+      if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      }
+      // Nếu dữ liệu là String (từ code cũ), thử parse
+      if (timestamp is String) {
+        return DateTime.tryParse(timestamp) ?? DateTime.now();
+      }
+      return DateTime.now();
+    }
+
     return User(
-      id: json['id'],
-      email: json['email'],
-      fullName: json['fullName'],
-      role: json['role'],
-      departmentId: json['departmentId'],
-      phoneNumber: json['phoneNumber'],
-      avatar: json['avatar'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      // 1. Lấy ID từ tham số truyền vào, không phải từ json
+      id: id,
+      // 2. Cung cấp giá trị mặc định để tránh lỗi 'null'
+      email: json['email'] as String? ?? '',
+      fullName: json['fullName'] as String? ?? 'Người dùng không tên',
+      role: json['role'] as String? ?? 'teacher', // Mặc định là teacher nếu thiếu
+      departmentId: json['departmentId'] as String?,
+      phoneNumber: json['phoneNumber'] as String?,
+      avatar: json['avatar'] as String?,
+      // 3. Xử lý Timestamp một cách an toàn
+      createdAt: parseTimestamp(json['createdAt']),
+      updatedAt: parseTimestamp(json['updatedAt']),
     );
   }
 
+  // Các hàm toJson và copyWith không cần thay đổi
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -73,6 +94,3 @@ class User {
     );
   }
 }
-
-
-

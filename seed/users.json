@@ -6,43 +6,41 @@
     "role": "admin",
     "departmentId": "dept_001",
     "phoneNumber": "0123456789",
-    "isActive": true,
-    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
-    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   },
   {
     "id": "user_002",
-    "email": "head.cntt@tlu.edu.vn",
-    "fullName": "Trần Thị Trưởng Khoa CNTT",
+    "email": "truongkhoa@tlu.edu.vn",
+    "fullName": "Trần Văn Trưởng Khoa",
     "role": "department_head",
     "departmentId": "dept_001",
-    "phoneNumber": "0123456790",
-    "isActive": true,
-    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
-    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+    "phoneNumber": "0123456788",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   },
   {
     "id": "user_003",
-    "email": "teacher1@tlu.edu.vn",
-    "fullName": "Lê Văn Giảng Viên 1",
+    "email": "giangvien@tlu.edu.vn",
+    "fullName": "Lê Văn Giảng Viên",
     "role": "teacher",
     "departmentId": "dept_001",
-    "phoneNumber": "0123456791",
-    "isActive": true,
-    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
-    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+    "phoneNumber": "0123456787",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   },
   {
     "id": "user_004",
-    "email": "teacher2@tlu.edu.vn",
-    "fullName": "Phạm Thị Giảng Viên 2",
+    "email": "demo@tlu.edu.vn",
+    "fullName": "Demo User",
     "role": "teacher",
     "departmentId": "dept_001",
-    "phoneNumber": "0123456792",
-    "isActive": true,
-    "createdAt": {"_seconds": 0, "_nanoseconds": 0},
-    "updatedAt": {"_seconds": 0, "_nanoseconds": 0}
+    "phoneNumber": "0123456786",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   }
 ]
-
-

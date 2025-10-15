@@ -31,33 +31,32 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  
+
   # State Management
   provider: ^6.1.2
-  
+
   # HTTP & API
   http: ^1.2.2
   dio: ^5.4.3+1
-  
+
   # Local Storage
   shared_preferences: ^2.2.3
   sqflite: ^2.3.3+1
-  
+
   # UI Components
   flutter_svg: ^2.0.10+1
   cached_network_image: ^3.3.1
-  
+
   # Date & Time
   intl: ^0.19.0
-  table_calendar: ^3.0.9
-  
-  # Firebase - Chỉ dùng Firestore
-  firebase_core: ^2.24.1
-  cloud_firestore: ^4.13.6
+  table_calendar: ^3.1.1 # Cũng nên nâng cấp gói này
 
+  # Firebase - ĐÃ CẬP NHẬT PHIÊN BẢN
+  firebase_core: ^2.31.0
+  cloud_firestore: ^4.17.3
+  firebase_auth: ^4.19.5
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
