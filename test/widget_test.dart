@@ -17,7 +17,7 @@ void main() {
     // Build the real app wrapped by the provider used in main().
     await tester.pumpWidget(
       ChangeNotifierProvider(
-        create: (_) => AppState.sample(),
+        create: (_) => AppState(),
         child: const TluApp(),
       ),
     );

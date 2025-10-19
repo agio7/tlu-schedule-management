@@ -63,7 +63,7 @@ class _RootScaffoldState extends State<RootScaffold> {
         selectedIndex: state.currentTabIndex,
         onDestinationSelected: (i) => context.read<AppState>().setTab(i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Tổng quan'),
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Tổng quan'),
           NavigationDestination(icon: Icon(Icons.event_note_outlined), label: 'Lịch dạy'),
           NavigationDestination(icon: Icon(Icons.fact_check_outlined), label: 'Phê duyệt'),
           NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Tiến độ'),
@@ -84,12 +84,15 @@ class OverviewScreen extends StatelessWidget {
     final state = context.watch<AppState>();
     final kpiStyle = Theme.of(context).textTheme.titleMedium;
 
+    // Lấy tất cả yêu cầu chờ duyệt (xin nghỉ và dạy bù)
+    final pendingRequests = [...state.leaveRequests.where((r) => r.status == RequestStatus.pending), ...state.makeups.where((m) => m.status == RequestStatus.pending)];
+
     final body = SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Tổng quan bộ môn', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          // Text('Tổng quan bộ môn', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           // Các KPI Card (Hiển thị 4 cột trên tablet/desktop, 2 cột trên mobile)
           GridView.count(
@@ -102,27 +105,76 @@ class OverviewScreen extends StatelessWidget {
               _KpiCard(icon: Icons.group, color: Colors.blue, title: 'Giảng viên', value: state.totalLecturers.toString(), style: kpiStyle),
               _KpiCard(icon: Icons.menu_book_rounded, color: Colors.green, title: 'Môn học', value: state.totalSubjects.toString(), style: kpiStyle),
               _KpiCard(icon: Icons.event_available, color: Colors.indigo, title: 'Buổi dạy', value: state.totalSessions.toString(), style: kpiStyle),
-              _KpiCard(icon: Icons.error_outline, color: Colors.red, title: 'Cảnh báo', value: state.totalAlerts.toString(), style: kpiStyle),
+              // KPI Cảnh báo được thay bằng số lượng yêu cầu chờ duyệt
+              _KpiCard(icon: Icons.fact_check, color: Colors.amber, title: 'Chờ duyệt', value: pendingRequests.length.toString(), style: kpiStyle),
             ],
           ),
           const SizedBox(height: 24),
           // Biểu đồ tiến độ (sẽ trống nếu không có dữ liệu)
           _Section(title: 'Tiến độ giảng dạy', child: _OverallLecturerBar()),
           const SizedBox(height: 24),
-          // Cảnh báo mới nhất
+          // Đã sửa: Thay thế phần Cảnh báo mới nhất bằng Yêu cầu chờ duyệt
           _Section(
-            title: 'Cảnh báo mới nhất',
-            action: TextButton(onPressed: () => _jumpTo(context, 5), child: const Text('Xem tất cả')),
-            child: state.alerts.isEmpty
-                ? const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Text('Không có cảnh báo mới')))
+            title: 'Yêu cầu chờ duyệt',
+            action: TextButton(onPressed: () => _jumpTo(context, 2), child: const Text('Xem phê duyệt')), // Jump to Approval Screen (index 2)
+            child: pendingRequests.isEmpty
+                ? const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Text('Không có yêu cầu nào chờ duyệt')))
                 : Column(
-              children: state.alerts.take(5).map((a) => _AlertTile(alert: a)).toList(),
+              children: pendingRequests.take(5).map((r) => _PendingRequestTile(request: r)).toList(),
             ),
           ),
         ],
       ),
     );
-    return Scaffold(appBar: const HoDAppBar(title: 'Tổng quan'), body: body);
+    // Sử dụng HoDWelcomeAppBar mới cho màn hình Tổng quan
+    return Scaffold(appBar: const HoDWelcomeAppBar(), body: body);
+  }
+}
+
+class _PendingRequestTile extends StatelessWidget {
+  const _PendingRequestTile({required this.request});
+  final dynamic request; // Có thể là LeaveRequest hoặc MakeupRegistration
+
+  @override
+  Widget build(BuildContext context) {
+    String title;
+    String subtitle;
+    IconData icon;
+    Color color = Colors.amber.shade700;
+    String typeLabel;
+
+    if (request is LeaveRequest) {
+      final r = request as LeaveRequest;
+      typeLabel = 'Xin nghỉ';
+      title = '${r.lecturer} • Lớp ${r.className}';
+      subtitle = 'Nghỉ ${dmy(r.date)} • Lý do: ${r.reason}';
+      icon = Icons.person_off_outlined;
+    } else if (request is MakeupRegistration) {
+      final m = request as MakeupRegistration;
+      typeLabel = 'Dạy bù';
+      title = '${m.lecturer} • Dạy bù ${dmy(m.makeupDate)}';
+      subtitle = 'Buổi nghỉ ${dmy(m.originalDate)} • Phòng: ${m.makeupRoom}';
+      icon = Icons.calendar_today_outlined;
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.amber.shade200)),
+      child: ListTile(
+        leading: CircleAvatar(backgroundColor: color.withAlpha(26), foregroundColor: color, child: Icon(icon)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text(subtitle),
+        trailing: Chip(
+          label: Text(typeLabel),
+          backgroundColor: Colors.amber.shade100,
+          labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+        onTap: () => _jumpTo(context, 2), // Nhấn vào chuyển sang màn hình Phê duyệt
+      ),
+    );
   }
 }
 
@@ -143,13 +195,20 @@ class _KpiCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            // Cấu trúc icon chính xác
             CircleAvatar(backgroundColor: color.withAlpha(26), foregroundColor: color, child: Icon(icon)),
             const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: style),
-              const SizedBox(height: 6),
-              Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            ]),
+            // ĐÃ SỬA: Bọc Column trong Expanded để nó sử dụng không gian còn lại
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: style, maxLines: 1, overflow: TextOverflow.ellipsis,), // Thêm ellipsis để xử lý tràn
+                    const SizedBox(height: 6),
+                    Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  ]
+              ),
+            ),
           ],
         ),
       ),
@@ -260,7 +319,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: const HoDAppBar(title: 'Lịch giảng dạy bộ môn'),
+      // Đã sửa: Thay đổi tiêu đề AppBar từ 'Lịch giảng dạy bộ môn' thành 'Lịch dạy bộ môn'
+      appBar: const HoDAppBar(title: 'Lịch dạy bộ môn'),
       body: Column(children: [
         // Bộ lọc
         Padding(
@@ -415,8 +475,19 @@ class _MakeupTab extends StatelessWidget {
   }
 }
 
-class ProgressScreen extends StatelessWidget {
+// -----------------------------------------------------------------------------
+// ĐÃ SỬA: Thêm chức năng tìm kiếm và lọc cho ProgressScreen
+// -----------------------------------------------------------------------------
+class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
+  @override
+  State<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen> {
+  String searchText = '';
+  String subjectFilter = 'Tất cả';
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -425,6 +496,16 @@ class ProgressScreen extends StatelessWidget {
     if (state.lecturers.isEmpty) {
       return const Scaffold(appBar: HoDAppBar(title: 'Tiến độ'), body: Center(child: Text('Không có dữ liệu giảng viên để theo dõi tiến độ')));
     }
+
+    final allSubjects = ['Tất cả', ...state.lecturers.map((e) => e.subject).toSet()];
+
+    // Logic lọc và tìm kiếm
+    final filteredProgress = state.lecturers.where((l) {
+      // Đảm bảo tìm kiếm theo tên/email hoạt động
+      final matchesSearch = searchText.isEmpty || l.name.toLowerCase().contains(searchText.toLowerCase()) || l.email.toLowerCase().contains(searchText.toLowerCase());
+      final matchesSubject = subjectFilter == 'Tất cả' || l.subject == subjectFilter;
+      return matchesSearch && matchesSubject;
+    }).toList();
 
     final body = SingleChildScrollView(
       padding: const EdgeInsets.all(12),
@@ -435,11 +516,32 @@ class ProgressScreen extends StatelessWidget {
           FilledButton.tonal(onPressed: () {}, child: const Text('Xuất báo cáo')),
         ]),
         const SizedBox(height: 12),
+        // Bộ lọc và tìm kiếm
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ĐÃ SỬA: Bọc SearchField trong Column để nó chiếm full width (đã có)
+              _SearchField(
+                hintText: 'Tìm kiếm theo tên giảng viên, email...',
+                onChanged: (value) => setState(() => searchText = value),
+              ),
+              const SizedBox(height: 8),
+              // Wrap Dropdown để nó cũng chiếm full width trên mobile
+              _Dropdown(label: 'Môn học', value: subjectFilter, values: allSubjects, onChanged: (v) => setState(() => subjectFilter = v!)),
+            ],
+          ),
+        ),
+
         // Biểu đồ tổng quan
         Card(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: Padding(padding: const EdgeInsets.all(12), child: _OverallLecturerBar())),
         const SizedBox(height: 12),
         // Danh sách tiến độ chi tiết
-        ...state.lecturers.map((l) => _ProgressRow(l: l)).toList(),
+        if (filteredProgress.isEmpty)
+          const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Text('Không tìm thấy giảng viên nào')))
+        else
+          ...filteredProgress.map((l) => _ProgressRow(l: l)).toList(),
       ]),
     );
     return Scaffold(appBar: const HoDAppBar(title: 'Tiến độ'), body: body);
@@ -485,21 +587,64 @@ class _ProgressRow extends StatelessWidget {
   }
 }
 
-class LecturersScreen extends StatelessWidget {
+// -----------------------------------------------------------------------------
+// ĐÃ SỬA: Thêm chức năng tìm kiếm và lọc cho LecturersScreen
+// -----------------------------------------------------------------------------
+class LecturersScreen extends StatefulWidget {
   const LecturersScreen({super.key});
+  @override
+  State<LecturersScreen> createState() => _LecturersScreenState();
+}
+
+class _LecturersScreenState extends State<LecturersScreen> {
+  String searchText = '';
+  String subjectFilter = 'Tất cả';
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+
+    final allSubjects = ['Tất cả', ...state.lecturers.map((e) => e.subject).toSet()];
+
+    // Logic lọc và tìm kiếm
+    final filteredLecturers = state.lecturers.where((l) {
+      final matchesSearch = searchText.isEmpty ||
+          l.name.toLowerCase().contains(searchText.toLowerCase()) ||
+          l.email.toLowerCase().contains(searchText.toLowerCase());
+      final matchesSubject = subjectFilter == 'Tất cả' || l.subject == subjectFilter;
+      return matchesSearch && matchesSubject;
+    }).toList();
+
     return Scaffold(
       appBar: const HoDAppBar(title: 'Quản lý giảng viên'),
-      body: state.lecturers.isEmpty
-          ? const Center(child: Text('Không có dữ liệu giảng viên'))
-          : GridView.count(
-        padding: const EdgeInsets.all(12),
-        crossAxisCount: MediaQuery.of(context).size.width > 700 ? 2 : 1,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        children: state.lecturers.map((l) => _LecturerCard(l: l)).toList(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SearchField(
+                  hintText: 'Tìm kiếm theo tên, email...',
+                  onChanged: (value) => setState(() => searchText = value),
+                ),
+                const SizedBox(height: 8),
+                _Dropdown(label: 'Môn học', value: subjectFilter, values: allSubjects, onChanged: (v) => setState(() => subjectFilter = v!)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: filteredLecturers.isEmpty
+                ? const Center(child: Text('Không tìm thấy giảng viên nào'))
+                : GridView.count(
+              padding: const EdgeInsets.all(12),
+              crossAxisCount: MediaQuery.of(context).size.width > 700 ? 2 : 1,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              children: filteredLecturers.map((l) => _LecturerCard(l: l)).toList(),
+            ),
+          ),
+        ],
       ),
       // Giữ nút thêm giảng viên
       // floatingActionButton: FloatingActionButton.extended(onPressed: () {}, icon: const Icon(Icons.add), label: const Text('Thêm giảng viên')),
@@ -684,6 +829,28 @@ class _Dropdown extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// NEW WIDGET: Search Field
+// -----------------------------------------------------------------------------
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.hintText, required this.onChanged});
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: const Icon(Icons.search),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+      ),
+    );
+  }
+}
+
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
   final SessionStatus status;
@@ -759,7 +926,47 @@ class _KpiSmall extends StatelessWidget {
   }
 }
 
-// Shared blue AppBar with Home button
+// -----------------------------------------------------------------------------
+// NEW WIDGET: Custom AppBar for Overview Screen
+// -----------------------------------------------------------------------------
+
+class HoDWelcomeAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const HoDWelcomeAppBar({super.key});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: Theme.of(context).primaryColor,
+      foregroundColor: Colors.white,
+      automaticallyImplyLeading: false, // Loại bỏ nút back
+      title: Row(
+        children: [
+          // Avatar minh họa (sử dụng icon người dùng làm placeholder)
+          const CircleAvatar(
+            backgroundColor: Colors.white,
+            child: Icon(Icons.person, color: Color(0xFF6750A4)), // Màu tím đậm
+          ),
+          const SizedBox(width: 12),
+          // Tiêu đề
+          Text(
+            'Xin chào, Trưởng Bộ môn',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600            ),
+          ),
+        ],
+      ),
+      elevation: 1,
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// EXISTING WIDGET: General AppBar for other Screens
+// -----------------------------------------------------------------------------
 class HoDAppBar extends StatelessWidget implements PreferredSizeWidget {
   const HoDAppBar({super.key, required this.title});
   final String title;
