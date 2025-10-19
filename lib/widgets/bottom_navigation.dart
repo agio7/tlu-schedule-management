@@ -64,14 +64,14 @@ class BottomNavigation extends StatelessWidget {
   }
 
   Widget _buildNavItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required int index,
-    required String route,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required int index,
+        required String route,
+      }) {
     final isSelected = currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () => context.go(route),
       child: Column(

@@ -117,3 +117,6 @@ class LessonProvider with ChangeNotifier {
     return _lessons.where((lesson) => !lesson.isCompleted).toList();
   }
 }
+
+
+

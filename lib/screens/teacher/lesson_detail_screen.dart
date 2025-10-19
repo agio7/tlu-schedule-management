@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
-import '../widgets/lesson_content_tab.dart';
-import '../widgets/attendance_tab.dart';
-import '../widgets/leave_registration_tab.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../widgets/lesson_content_tab.dart';
+import '../../widgets/attendance_tab.dart';
+import '../../widgets/leave_registration_tab.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final String lessonId;
@@ -40,7 +40,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
     return Consumer<LessonProvider>(
       builder: (context, lessonProvider, child) {
         final lesson = lessonProvider.getLessonById(widget.lessonId);
-        
+
         if (lesson == null) {
           return Scaffold(
             appBar: AppBar(
@@ -90,7 +90,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Lesson details row
                     Row(
                       children: [
@@ -109,7 +109,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
+
                     Row(
                       children: [
                         Expanded(
@@ -129,7 +129,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                   ],
                 ),
               ),
-              
+
               // Tab Bar
               Container(
                 color: Colors.white,
@@ -146,7 +146,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                   ],
                 ),
               ),
-              
+
               // Tab Content
               Expanded(
                 child: TabBarView(

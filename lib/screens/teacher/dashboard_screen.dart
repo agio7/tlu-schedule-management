@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
-import '../widgets/lesson_card.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../widgets/lesson_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,7 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Consumer<LessonProvider>(
         builder: (context, lessonProvider, child) {
           final todayLessons = lessonProvider.getTodayLessons();
-          
+
           return Column(
             children: [
               // Header Section
@@ -127,7 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              
+
               // Today's Schedule Section
               Expanded(
                 child: Container(
@@ -159,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
-                      
+
                       // Lessons List
                       Expanded(
                         child: Container(
@@ -179,41 +179,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           child: todayLessons.isEmpty
                               ? const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.event_available,
-                                        size: 64,
-                                        color: Colors.grey,
-                                      ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Không có buổi học nào hôm nay',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.event_available,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Không có buổi học nào hôm nay',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 16,
                                   ),
-                                )
+                                ),
+                              ],
+                            ),
+                          )
                               : ListView.builder(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: todayLessons.length,
-                                  itemBuilder: (context, index) {
-                                    final lesson = todayLessons[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: LessonCard(
-                                        lesson: lesson,
-                                        onTap: () {
-                                          context.go('/lesson-detail/${lesson.id}');
-                                        },
-                                      ),
-                                    );
+                            padding: const EdgeInsets.all(16),
+                            itemCount: todayLessons.length,
+                            itemBuilder: (context, index) {
+                              final lesson = todayLessons[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: LessonCard(
+                                  lesson: lesson,
+                                  onTap: () {
+                                    context.go('/lesson-detail/${lesson.id}');
                                   },
                                 ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],

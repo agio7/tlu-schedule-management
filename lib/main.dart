@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'teacher/dashboard_screen.dart';
-import 'teacher/calendar_screen.dart';
-import 'teacher/lesson_detail_screen.dart';
-import 'teacher/attendance_screen.dart';
-import 'teacher/leave_registration_screen.dart';
-import 'teacher/reports_screen.dart';
+import 'screens/teacher/dashboard_screen.dart';
+import 'screens/teacher/calendar_screen.dart';
+import 'screens/teacher/lesson_detail_screen.dart';
+import 'screens/teacher/attendance_screen.dart';
+import 'screens/teacher/leave_registration_screen.dart';
+import 'screens/teacher/reports_screen.dart';
 import 'providers/lesson_provider.dart';
 
 void main() async {

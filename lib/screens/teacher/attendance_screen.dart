@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -28,7 +28,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           final todayLessons = lessonProvider.getTodayLessons();
           final ongoingLessons = todayLessons.where((lesson) => lesson.status == 'ongoing').toList();
           final upcomingLessons = todayLessons.where((lesson) => lesson.status == 'upcoming').toList();
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -74,9 +74,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Ongoing Lessons
                 if (ongoingLessons.isNotEmpty) ...[
                   const Text(
@@ -96,7 +96,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   }),
                   const SizedBox(height: 20),
                 ],
-                
+
                 // Upcoming Lessons
                 if (upcomingLessons.isNotEmpty) ...[
                   const Text(
@@ -115,7 +115,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     );
                   }),
                 ],
-                
+
                 // No lessons today
                 if (todayLessons.isEmpty) ...[
                   const SizedBox(height: 40),
@@ -179,7 +179,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         ),
         boxShadow: [
           BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -216,9 +216,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Text(
             lesson.subject,
             style: const TextStyle(
@@ -227,9 +227,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               color: Color(0xFF111827),
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Row(
             children: [
               const Icon(Icons.people, size: 16, color: Color(0xFF6B7280)),
@@ -253,9 +253,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Attendance Status
           Row(
             children: [
@@ -266,7 +266,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                lesson.attendanceList.isNotEmpty 
+                lesson.attendanceList.isNotEmpty
                     ? 'Đã điểm danh (${lesson.attendanceList.length} sinh viên)'
                     : 'Chưa điểm danh',
                 style: TextStyle(
@@ -277,9 +277,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [

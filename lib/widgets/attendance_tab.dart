@@ -28,7 +28,7 @@ class _AttendanceTabState extends State<AttendanceTab> {
     'Phan Văn I',
     'Ngô Thị K',
   ];
-  
+
   final Set<String> _presentStudents = <String>{};
 
   @override
@@ -98,9 +98,9 @@ class _AttendanceTabState extends State<AttendanceTab> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Student List
           Expanded(
             child: Container(
@@ -129,14 +129,14 @@ class _AttendanceTabState extends State<AttendanceTab> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   Expanded(
                     child: ListView.builder(
                       itemCount: _students.length,
                       itemBuilder: (context, index) {
                         final student = _students[index];
                         final isPresent = _presentStudents.contains(student);
-                        
+
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
@@ -188,9 +188,9 @@ class _AttendanceTabState extends State<AttendanceTab> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Action Buttons
           Row(
             children: [

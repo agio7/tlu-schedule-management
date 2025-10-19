@@ -21,7 +21,7 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
   String _selectedReason = '';
   DateTime? _makeupDate;
   final TextEditingController _notesController = TextEditingController();
-  
+
   final List<String> _reasons = [
     'Ốm đau',
     'Công tác',
@@ -64,7 +64,7 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Registration Type
                 const Text(
                   'Loại đăng ký',
@@ -105,9 +105,9 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Reason
                 const Text(
                   'Lý do',
@@ -139,7 +139,7 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     });
                   },
                 ),
-                
+
                 // Makeup Date (only for makeup registration)
                 if (_registrationType == 'makeup') ...[
                   const SizedBox(height: 16),
@@ -180,8 +180,8 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                                   ? DateFormat('dd/MM/yyyy').format(_makeupDate!)
                                   : 'Chọn ngày bù',
                               style: TextStyle(
-                                color: _makeupDate != null 
-                                    ? const Color(0xFF374151) 
+                                color: _makeupDate != null
+                                    ? const Color(0xFF374151)
                                     : Colors.grey[600],
                               ),
                             ),
@@ -192,9 +192,9 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     ),
                   ),
                 ],
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Start Time
                 const Text(
                   'Giờ bắt đầu',
@@ -220,9 +220,9 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // End Time
                 const Text(
                   'Giờ kết thúc',
@@ -248,9 +248,9 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Additional Notes
                 const Text(
                   'Ghi chú bổ sung',
@@ -272,18 +272,18 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Submit Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _selectedReason.isEmpty 
-                        ? null 
+                    onPressed: _selectedReason.isEmpty
+                        ? null
                         : () {
-                            _submitRegistration();
-                          },
+                      _submitRegistration();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6B46C1),
                       foregroundColor: Colors.white,

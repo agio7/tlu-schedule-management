@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
-import '../widgets/lesson_card.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../widgets/lesson_card.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -32,13 +32,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         builder: (context, lessonProvider, child) {
           final allLessons = lessonProvider.lessons;
           final subjects = ['Tất cả', ...allLessons.map((l) => l.subject).toSet().toList()];
-          
+
           // Filter lessons based on selected subject
           List<dynamic> filteredLessons = allLessons;
           if (_selectedSubject != 'Tất cả') {
             filteredLessons = allLessons.where((l) => l.subject == _selectedSubject).toList();
           }
-          
+
           // Filter by status
           if (_selectedFilter == 'Đã học') {
             filteredLessons = filteredLessons.where((l) => l.isCompleted).toList();
@@ -96,13 +96,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // Calendar Grid
                     _buildCalendarGrid(),
                   ],
                 ),
               ),
-              
+
               // Subject Filter
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -135,9 +135,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Filter Tabs
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -160,9 +160,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Lessons List
               Expanded(
                 child: Container(
@@ -193,41 +193,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       Expanded(
                         child: filteredLessons.isEmpty
                             ? const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.event_available,
-                                      size: 64,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      'Không có buổi học nào',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.event_available,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Không có buổi học nào',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 16,
                                 ),
-                              )
+                              ),
+                            ],
+                          ),
+                        )
                             : ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: filteredLessons.length,
-                                itemBuilder: (context, index) {
-                                  final lesson = filteredLessons[index];
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: LessonCard(
-                                      lesson: lesson,
-                                      onTap: () {
-                                        context.go('/lesson-detail/${lesson.id}');
-                                      },
-                                    ),
-                                  );
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredLessons.length,
+                          itemBuilder: (context, index) {
+                            final lesson = filteredLessons[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: LessonCard(
+                                lesson: lesson,
+                                onTap: () {
+                                  context.go('/lesson-detail/${lesson.id}');
                                 },
                               ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -245,10 +245,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final firstDayOfMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final lastDayOfMonth = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
     final firstWeekday = firstDayOfMonth.weekday;
-    
+
     final daysInMonth = lastDayOfMonth.day;
     final totalCells = firstWeekday - 1 + daysInMonth;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -257,36 +257,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Row(
             children: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
                 .map((day) => Expanded(
-                      child: Center(
-                        child: Text(
-                          day,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: day == 'T7' || day == 'CN' ? Colors.red : Colors.grey[700],
-                          ),
-                        ),
-                      ),
-                    ))
+              child: Center(
+                child: Text(
+                  day,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: day == 'T7' || day == 'CN' ? Colors.red : Colors.grey[700],
+                  ),
+                ),
+              ),
+            ))
                 .toList(),
           ),
           const SizedBox(height: 8),
-          
+
           // Calendar days
           ...List.generate((totalCells / 7).ceil(), (weekIndex) {
             return Row(
               children: List.generate(7, (dayIndex) {
                 final cellIndex = weekIndex * 7 + dayIndex;
                 final dayNumber = cellIndex - firstWeekday + 2;
-                
+
                 if (dayNumber < 1 || dayNumber > daysInMonth) {
                   return const Expanded(child: SizedBox());
                 }
-                
-                final isToday = dayNumber == DateTime.now().day && 
-                               _selectedDate.month == DateTime.now().month &&
-                               _selectedDate.year == DateTime.now().year;
+
+                final isToday = dayNumber == DateTime.now().day &&
+                    _selectedDate.month == DateTime.now().month &&
+                    _selectedDate.year == DateTime.now().year;
                 final isWeekend = dayIndex >= 5;
-                
+
                 return Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -305,11 +305,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Text(
                           dayNumber.toString(),
                           style: TextStyle(
-                            color: isToday 
-                                ? Colors.white 
-                                : isWeekend 
-                                    ? Colors.red 
-                                    : Colors.black87,
+                            color: isToday
+                                ? Colors.white
+                                : isWeekend
+                                ? Colors.red
+                                : Colors.black87,
                             fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -327,7 +327,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildFilterTab(String label, int count) {
     final isSelected = _selectedFilter == label;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {

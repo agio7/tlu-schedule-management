@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -31,14 +31,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final completedLessons = lessonProvider.getCompletedLessons();
           final upcomingLessons = lessonProvider.getUpcomingLessons();
           final leaveRequests = lessonProvider.leaveRequests;
-          
+
           // Calculate statistics
           final totalLessons = allLessons.length;
           final completedCount = completedLessons.length;
           final upcomingCount = upcomingLessons.length;
           final leaveCount = leaveRequests.where((r) => r.type == 'leave').length;
           final makeupCount = leaveRequests.where((r) => r.type == 'makeup').length;
-          
+
           // Calculate total teaching hours
           double totalHours = 0;
           for (final lesson in completedLessons) {
@@ -48,7 +48,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final endMinutes = int.parse(endTime[0]) * 60 + int.parse(endTime[1]);
             totalHours += (endMinutes - startMinutes) / 60;
           }
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -132,7 +132,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                     lastDate: DateTime.now(),
                                   );
                                 }
-                                
+
                                 if (pickedDate != null) {
                                   setState(() {
                                     _selectedDate = pickedDate!;
@@ -166,9 +166,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Statistics Cards
                 GridView.count(
                   shrinkWrap: true,
@@ -204,9 +204,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Leave Statistics
                 Container(
                   width: double.infinity,
@@ -234,7 +234,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Row(
                         children: [
                           Expanded(
@@ -258,9 +258,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Recent Leave Requests
                 if (leaveRequests.isNotEmpty) ...[
                   Container(

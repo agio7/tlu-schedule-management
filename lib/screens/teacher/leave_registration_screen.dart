@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/lesson_provider.dart';
-import '../widgets/bottom_navigation.dart';
-import '../models/lesson.dart';
+import '../../providers/lesson_provider.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../models/lesson.dart';
 
 class LeaveRegistrationScreen extends StatefulWidget {
   const LeaveRegistrationScreen({super.key});
@@ -18,7 +18,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
   String _selectedReason = '';
   DateTime? _makeupDate;
   final TextEditingController _notesController = TextEditingController();
-  
+
   final List<String> _reasons = [
     'Ốm đau',
     'Công tác',
@@ -40,7 +40,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
       body: Consumer<LessonProvider>(
         builder: (context, lessonProvider, child) {
           final upcomingLessons = lessonProvider.getUpcomingLessons();
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -87,9 +87,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Registration Form
                 Container(
                   width: double.infinity,
@@ -117,7 +117,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Select Lesson
                       const Text(
                         'Chọn buổi học',
@@ -151,9 +151,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           });
                         },
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Registration Type
                       const Text(
                         'Loại đăng ký',
@@ -194,9 +194,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Reason
                       const Text(
                         'Lý do',
@@ -228,7 +228,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           });
                         },
                       ),
-                      
+
                       // Makeup Date (only for makeup registration)
                       if (_registrationType == 'makeup') ...[
                         const SizedBox(height: 16),
@@ -269,8 +269,8 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                                         ? DateFormat('dd/MM/yyyy').format(_makeupDate!)
                                         : 'Chọn ngày bù',
                                     style: TextStyle(
-                                      color: _makeupDate != null 
-                                          ? const Color(0xFF374151) 
+                                      color: _makeupDate != null
+                                          ? const Color(0xFF374151)
                                           : Colors.grey[600],
                                     ),
                                   ),
@@ -281,9 +281,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           ),
                         ),
                       ],
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Additional Notes
                       const Text(
                         'Ghi chú bổ sung',
@@ -305,9 +305,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Submit Button
                       SizedBox(
                         width: double.infinity,
@@ -315,8 +315,8 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                           onPressed: _selectedLessonId.isEmpty || _selectedReason.isEmpty
                               ? null
                               : () {
-                                  _submitRegistration();
-                                },
+                            _submitRegistration();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF6B46C1),
                             foregroundColor: Colors.white,
@@ -337,9 +337,9 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Recent Requests
                 if (lessonProvider.leaveRequests.isNotEmpty) ...[
                   Container(

@@ -64,9 +64,9 @@ class LessonCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Lesson Details
             Expanded(
               child: Column(
@@ -81,7 +81,7 @@ class LessonCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Class info
                   Row(
                     children: [
@@ -101,7 +101,7 @@ class LessonCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  
+
                   // Room info
                   Row(
                     children: [
@@ -123,7 +123,7 @@ class LessonCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Arrow icon
             const Icon(
               Icons.arrow_forward_ios,

@@ -105,9 +105,9 @@ class _LessonContentTabState extends State<LessonContentTab> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Content Section
           Container(
             width: double.infinity,
@@ -152,9 +152,9 @@ class _LessonContentTabState extends State<LessonContentTab> {
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 if (_isEditing) ...[
                   TextField(
                     controller: _contentController,
@@ -218,8 +218,8 @@ class _LessonContentTabState extends State<LessonContentTab> {
                       widget.lesson.content ?? 'Chưa có nội dung buổi học',
                       style: TextStyle(
                         fontSize: 14,
-                        color: widget.lesson.content != null 
-                            ? const Color(0xFF374151) 
+                        color: widget.lesson.content != null
+                            ? const Color(0xFF374151)
                             : Colors.grey[600],
                       ),
                     ),
@@ -228,9 +228,9 @@ class _LessonContentTabState extends State<LessonContentTab> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Action Buttons
           if (!_isEditing) ...[
             Row(
