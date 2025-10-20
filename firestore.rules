@@ -29,7 +29,7 @@ service cloud.firestore {
       allow create, update, delete: if hasRole('admin');
     }
 
-    // Users
+    // Users - Allow read for all authenticated users, but restrict updates
     match /users/{userId} {
       allow read: if isSignedIn();
       // A user can update their own profile (not role)

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Subject {
   final String id;
   final String name;
@@ -24,17 +26,27 @@ class Subject {
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) {
+    DateTime parseTimestamp(dynamic timestamp) {
+      if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      }
+      if (timestamp is String) {
+        return DateTime.tryParse(timestamp) ?? DateTime.now();
+      }
+      return DateTime.now();
+    }
+
     return Subject(
-      id: json['id'],
-      name: json['name'],
-      code: json['code'],
-      departmentId: json['departmentId'],
-      credits: json['credits'],
-      totalHours: json['totalHours'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      departmentId: json['departmentId'] ?? '',
+      credits: json['credits'] ?? 0,
+      totalHours: json['totalHours'] ?? 0,
       description: json['description'],
       prerequisites: json['prerequisites'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: parseTimestamp(json['createdAt']),
+      updatedAt: parseTimestamp(json['updatedAt']),
     );
   }
 
@@ -51,6 +63,32 @@ class Subject {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+  }
+
+  Subject copyWith({
+    String? id,
+    String? name,
+    String? code,
+    String? departmentId,
+    int? credits,
+    int? totalHours,
+    String? description,
+    String? prerequisites,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Subject(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      departmentId: departmentId ?? this.departmentId,
+      credits: credits ?? this.credits,
+      totalHours: totalHours ?? this.totalHours,
+      description: description ?? this.description,
+      prerequisites: prerequisites ?? this.prerequisites,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }
 
