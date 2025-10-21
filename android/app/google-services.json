@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "403810486111",
+    "project_id": "tlu-schedule-management",
+    "storage_bucket": "tlu-schedule-management.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403810486111:android:5c35f672bcc0af689018ea",
+        "android_client_info": {
+          "package_name": "com.example.tlu_schedule_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8u3-zXtL1V4T9Zy5tPla5hS4lRwaC5Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

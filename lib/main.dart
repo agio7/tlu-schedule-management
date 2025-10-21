@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'app_state.dart';
+import 'firebase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  
   runApp(
     ChangeNotifierProvider(
       // Sử dụng constructor rỗng để khởi tạo trạng thái không có dữ liệu
@@ -52,21 +57,21 @@ class _RootScaffoldState extends State<RootScaffold> {
       const OverviewScreen(),
       const ScheduleScreen(),
       const ApprovalScreen(),
-      const ProgressScreen(),
+      const StatisticsScreen(), // ĐÃ SỬA: Thay ProgressScreen bằng StatisticsScreen
       const LecturersScreen(),
       const AlertsScreen(),
     ];
 
     return Scaffold(
-      body: SafeArea(child: pages[state.currentTabIndex]),
+      body: SafeArea(child: pages[state.currentTab]),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: state.currentTabIndex,
+        selectedIndex: state.currentTab,
         onDestinationSelected: (i) => context.read<AppState>().setTab(i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Tổng quan'),
           NavigationDestination(icon: Icon(Icons.event_note_outlined), label: 'Lịch dạy'),
           NavigationDestination(icon: Icon(Icons.fact_check_outlined), label: 'Phê duyệt'),
-          NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Tiến độ'),
+          NavigationDestination(icon: Icon(Icons.bar_chart_outlined), label: 'Thống kê'), // ĐÃ SỬA: Thay 'Tiến độ' bằng 'Thống kê'
           NavigationDestination(icon: Icon(Icons.people_alt_outlined), label: 'Giảng viên'),
           NavigationDestination(icon: Icon(Icons.warning_amber_rounded), label: 'Cảnh báo'),
         ],
@@ -94,6 +99,9 @@ class OverviewScreen extends StatelessWidget {
         children: [
           // Text('Tổng quan bộ môn', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
+          
+          // Nút quản lý dữ liệu mẫu
+          
           // Các KPI Card (Hiển thị 4 cột trên tablet/desktop, 2 cột trên mobile)
           GridView.count(
             physics: const NeverScrollableScrollPhysics(),
@@ -105,7 +113,7 @@ class OverviewScreen extends StatelessWidget {
               _KpiCard(icon: Icons.group, color: Colors.blue, title: 'Giảng viên', value: state.totalLecturers.toString(), style: kpiStyle),
               _KpiCard(icon: Icons.menu_book_rounded, color: Colors.green, title: 'Môn học', value: state.totalSubjects.toString(), style: kpiStyle),
               _KpiCard(icon: Icons.event_available, color: Colors.indigo, title: 'Buổi dạy', value: state.totalSessions.toString(), style: kpiStyle),
-              // KPI Cảnh báo được thay bằng số lượng yêu cầu chờ duyệt
+              // KPI Chờ duyệt
               _KpiCard(icon: Icons.fact_check, color: Colors.amber, title: 'Chờ duyệt', value: pendingRequests.length.toString(), style: kpiStyle),
             ],
           ),
@@ -360,6 +368,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 }
 
+// -----------------------------------------------------------------------------
+// ĐÃ SỬA: Màn hình Phê duyệt (ApprovalScreen)
+// -----------------------------------------------------------------------------
 class ApprovalScreen extends StatefulWidget {
   const ApprovalScreen({super.key});
   @override
@@ -371,7 +382,8 @@ class _ApprovalScreenState extends State<ApprovalScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    // 3 tabs: Chờ duyệt, Đã duyệt, Từ chối
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -385,6 +397,7 @@ class _ApprovalScreenState extends State<ApprovalScreen> with TickerProviderStat
     return Scaffold(
       appBar: const HoDAppBar(title: 'Phê duyệt'),
       body: Column(children: [
+        // TabBar
         Container(
           color: Colors.white,
           child: TabBar(
@@ -392,204 +405,498 @@ class _ApprovalScreenState extends State<ApprovalScreen> with TickerProviderStat
             labelColor: Theme.of(context).primaryColor,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Theme.of(context).primaryColor,
-            tabs: const [Tab(text: 'Đơn xin nghỉ'), Tab(text: 'Đăng ký dạy bù')],
-          ),
-        ),
-        Expanded(child: TabBarView(controller: _tabController, children: const [_LeaveTab(), _MakeupTab()])),
-      ]),
-    );
-  }
-}
-
-class _LeaveTab extends StatelessWidget {
-  const _LeaveTab();
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final items = state.leaveRequests.where((e) => e.status == RequestStatus.pending).toList();
-    if (items.isEmpty) {
-      return const Center(child: Text('Chưa có đơn xin nghỉ nào chờ duyệt'));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: items.length,
-      itemBuilder: (context, i) {
-        final r = items[i];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${r.lecturer} • ${r.subject} • Lớp ${r.className}', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text('Ngày: ${dmy(r.date)}  •  ${r.session}  •  Phòng: ${r.room}'),
-              Text('Nộp lúc: ${dmy(r.submittedAt)}'),
-              const SizedBox(height: 8),
-              Text('Lý do: ${r.reason}'),
-              const SizedBox(height: 8),
-              Row(children: [
-                TextButton(onPressed: () {}, child: const Text('Xem minh chứng đính kèm')),
-                const Spacer(),
-                _ApproveRejectButtons(onApprove: () => context.read<AppState>().approveLeave(r, true), onReject: () => context.read<AppState>().approveLeave(r, false)),
-              ]),
-            ]),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _MakeupTab extends StatelessWidget {
-  const _MakeupTab();
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final items = state.makeups.where((e) => e.status == RequestStatus.pending).toList();
-    if (items.isEmpty) {
-      return const Center(child: Text('Chưa có đăng ký dạy bù nào chờ duyệt'));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: items.length,
-      itemBuilder: (context, i) {
-        final m = items[i];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: _InfoBox(title: 'Buổi nghỉ', lines: ['${dmy(m.originalDate)}', m.originalSession])),
-              const SizedBox(width: 8),
-              // Buổi dạy bù được highlight màu xanh nhạt
-              Expanded(child: _InfoBox(title: 'Buổi dạy bù', highlight: true, lines: ['${dmy(m.makeupDate)}', m.makeupSession, 'Phòng ${m.makeupRoom}'])),
-              const SizedBox(width: 8),
-              _ApproveRejectButtons(onApprove: () => context.read<AppState>().approveMakeup(m, true), onReject: () => context.read<AppState>().approveMakeup(m, false)),
-            ]),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// ĐÃ SỬA: Thêm chức năng tìm kiếm và lọc cho ProgressScreen
-// -----------------------------------------------------------------------------
-class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({super.key});
-  @override
-  State<ProgressScreen> createState() => _ProgressScreenState();
-}
-
-class _ProgressScreenState extends State<ProgressScreen> {
-  String searchText = '';
-  String subjectFilter = 'Tất cả';
-
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-
-    // Nếu không có giảng viên, hiển thị thông báo trống
-    if (state.lecturers.isEmpty) {
-      return const Scaffold(appBar: HoDAppBar(title: 'Tiến độ'), body: Center(child: Text('Không có dữ liệu giảng viên để theo dõi tiến độ')));
-    }
-
-    final allSubjects = ['Tất cả', ...state.lecturers.map((e) => e.subject).toSet()];
-
-    // Logic lọc và tìm kiếm
-    final filteredProgress = state.lecturers.where((l) {
-      // Đảm bảo tìm kiếm theo tên/email hoạt động
-      final matchesSearch = searchText.isEmpty || l.name.toLowerCase().contains(searchText.toLowerCase()) || l.email.toLowerCase().contains(searchText.toLowerCase());
-      final matchesSubject = subjectFilter == 'Tất cả' || l.subject == subjectFilter;
-      return matchesSearch && matchesSubject;
-    }).toList();
-
-    final body = SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(children: [
-        Row(children: [
-          Text('Tiến độ giảng dạy', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-          const Spacer(),
-          FilledButton.tonal(onPressed: () {}, child: const Text('Xuất báo cáo')),
-        ]),
-        const SizedBox(height: 12),
-        // Bộ lọc và tìm kiếm
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ĐÃ SỬA: Bọc SearchField trong Column để nó chiếm full width (đã có)
-              _SearchField(
-                hintText: 'Tìm kiếm theo tên giảng viên, email...',
-                onChanged: (value) => setState(() => searchText = value),
-              ),
-              const SizedBox(height: 8),
-              // Wrap Dropdown để nó cũng chiếm full width trên mobile
-              _Dropdown(label: 'Môn học', value: subjectFilter, values: allSubjects, onChanged: (v) => setState(() => subjectFilter = v!)),
+            tabs: const [
+              Tab(text: 'Chờ duyệt'),
+              Tab(text: 'Đã duyệt'),
+              Tab(text: 'Từ chối'),
             ],
           ),
         ),
-
-        // Biểu đồ tổng quan
-        Card(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: Padding(padding: const EdgeInsets.all(12), child: _OverallLecturerBar())),
-        const SizedBox(height: 12),
-        // Danh sách tiến độ chi tiết
-        if (filteredProgress.isEmpty)
-          const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Text('Không tìm thấy giảng viên nào')))
-        else
-          ...filteredProgress.map((l) => _ProgressRow(l: l)).toList(),
+        // TabBarView
+        Expanded(child: TabBarView(
+            controller: _tabController,
+            children: [
+              _ApprovalTab(status: RequestStatus.pending), // Tab 1: Chờ duyệt
+              _ApprovalTab(status: RequestStatus.approved), // Tab 2: Đã duyệt
+              _ApprovalTab(status: RequestStatus.rejected), // Tab 3: Từ chối
+            ]
+        )),
       ]),
     );
-    return Scaffold(appBar: const HoDAppBar(title: 'Tiến độ'), body: body);
   }
 }
 
-class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.l});
-  final Lecturer l;
+// Widget chung cho cả 3 tab Phê duyệt
+class _ApprovalTab extends StatelessWidget {
+  const _ApprovalTab({required this.status});
+  final RequestStatus status;
+
   @override
   Widget build(BuildContext context) {
-    // Tính toán phần trăm (sẽ là 0% nếu hoursPlanned = 0)
-    final percent = l.hoursPlanned == 0 ? 0 : (l.hoursActual / l.hoursPlanned * 100).round();
-    final progressValue = l.hoursPlanned == 0 ? 0.0 : l.hoursActual / l.hoursPlanned;
+    final state = context.watch<AppState>();
+    // Lấy tất cả yêu cầu (Xin nghỉ và Dạy bù)
+    final allRequests = [
+      ...state.leaveRequests.map((r) => {'type': 'leave', 'data': r, 'status': r.status}),
+      ...state.makeups.map((m) => {'type': 'makeup', 'data': m, 'status': m.status}),
+    ];
 
+    // Lọc theo trạng thái hiện tại của tab
+    final filteredItems = allRequests.where((item) => item['status'] == status).toList();
+
+    if (filteredItems.isEmpty) {
+      String message = status == RequestStatus.pending
+          ? 'Không có yêu cầu nào chờ duyệt.'
+          : status == RequestStatus.approved
+          ? 'Không có yêu cầu nào đã duyệt.'
+          : 'Không có yêu cầu nào bị từ chối.';
+      return Center(child: Text(message));
+    }
+
+    // Sắp xếp theo thời gian nộp (chỉ định cho LeaveRequest để minh họa)
+    filteredItems.sort((a, b) {
+      DateTime dateA = a['type'] == 'leave' ? (a['data'] as LeaveRequest).submittedAt : DateTime(2000);
+      DateTime dateB = b['type'] == 'leave' ? (b['data'] as LeaveRequest).submittedAt : DateTime(2000);
+      return dateB.compareTo(dateA);
+    });
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: filteredItems.length,
+      itemBuilder: (context, i) {
+        final item = filteredItems[i];
+        if (item['type'] == 'leave') {
+          return _LeaveRequestCard(request: item['data'] as LeaveRequest, isPending: status == RequestStatus.pending);
+        } else {
+          return _MakeupRequestCard(makeup: item['data'] as MakeupRegistration, isPending: status == RequestStatus.pending);
+        }
+      },
+    );
+  }
+}
+
+// Card cho Đơn Xin Nghỉ (chỉ hiển thị nút Duyệt/Từ chối nếu đang ở trạng thái Pending)
+class _LeaveRequestCard extends StatelessWidget {
+  const _LeaveRequestCard({required this.request, required this.isPending});
+  final LeaveRequest request;
+  final bool isPending;
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: Text('${l.name} • ${l.subject}', style: Theme.of(context).textTheme.titleMedium)),
-            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(14)), child: Text('$percent%')),
-          ]),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(value: progressValue, minHeight: 8, borderRadius: BorderRadius.circular(8), color: Colors.blue),
-          const SizedBox(height: 4),
-          Text('Giờ giảng: ${l.hoursActual}/${l.hoursPlanned} giờ'),
-          const SizedBox(height: 8),
-          // KPI chi tiết sẽ hiển thị '-' vì không có dữ liệu buổi cụ thể
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-            _KpiSmall(title: 'Tổng số buổi', value: '-'),
-            _KpiSmall(title: 'Đã dạy', value: '-'),
-            _KpiSmall(title: 'Đã nghỉ', value: '-'),
-            _KpiSmall(title: 'Đã dạy bù', value: '-'),
-          ]),
-          const SizedBox(height: 8),
-          const Row(children: [Icon(Icons.info_outline, color: Colors.grey, size: 18), SizedBox(width: 6), Text('Chưa có dữ liệu chi tiết')]),
-        ]),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header (Nghỉ dạy Chip và Ngày nộp)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _RequestTypeChip(label: 'Nghỉ dạy', color: Colors.amber),
+                Text(dmy(request.submittedAt), style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Nội dung chính
+            Text(request.lecturer, style: Theme.of(context).textTheme.titleMedium),
+            Text('${request.subject} • Lớp ${request.className} • Phòng: ${request.room}'),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(dmy(request.date)),
+                const SizedBox(width: 12),
+                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(request.session),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Lý do: ${request.reason}'),
+
+            // Nút hành động (chỉ hiện khi Pending)
+            if (isPending) ...[
+              const SizedBox(height: 16),
+              Row(children: [
+                TextButton(onPressed: () {}, child: const Text('Xem minh chứng')),
+                const Spacer(),
+                  _ApprovalButtons(
+                    onApprove: () => context.read<AppState>().approveLeave(context.read<AppState>().leaveRequests.indexOf(request)),
+                    onReject: () => context.read<AppState>().approveLeave(context.read<AppState>().leaveRequests.indexOf(request)),
+                  ),
+              ]),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
+// Card cho Đăng Ký Dạy Bù
+class _MakeupRequestCard extends StatelessWidget {
+  const _MakeupRequestCard({required this.makeup, required this.isPending});
+  final MakeupRegistration makeup;
+  final bool isPending;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header (Dạy bù Chip và Ngày nộp)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _RequestTypeChip(label: 'Dạy bù', color: Colors.blue),
+                Text(dmy(makeup.originalDate), style: Theme.of(context).textTheme.bodySmall), // Giả sử dùng ngày nghỉ ban đầu làm ngày tham chiếu
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Nội dung chính
+            Text(makeup.lecturer, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Thông tin Buổi nghỉ
+                Expanded(child: _InfoBox(title: 'Buổi nghỉ', lines: ['${dmy(makeup.originalDate)}', makeup.originalSession])),
+                const SizedBox(width: 8),
+                // Thông tin Dạy bù
+                Expanded(child: _InfoBox(title: 'Buổi dạy bù', highlight: true, lines: ['${dmy(makeup.makeupDate)}', makeup.makeupSession, 'Phòng ${makeup.makeupRoom}'])),
+              ],
+            ),
+            // Nút hành động (chỉ hiện khi Pending)
+            if (isPending) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _ApprovalButtons(
+                    onApprove: () => context.read<AppState>().approveMakeup(context.read<AppState>().makeups.indexOf(makeup)),
+                    onReject: () => context.read<AppState>().approveMakeup(context.read<AppState>().makeups.indexOf(makeup)),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Widget chip nhỏ hiển thị loại yêu cầu
+class _RequestTypeChip extends StatelessWidget {
+  const _RequestTypeChip({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+}
+
+
 // -----------------------------------------------------------------------------
-// ĐÃ SỬA: Thêm chức năng tìm kiếm và lọc cho LecturersScreen
+// ĐÃ SỬA: Màn hình Thống kê (StatisticsScreen) - Thay thế ProgressScreen
 // -----------------------------------------------------------------------------
+class StatisticsScreen extends StatefulWidget {
+  const StatisticsScreen({super.key});
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  String searchText = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+
+    // Thay đổi tiêu đề AppBar
+    return Scaffold(
+      appBar: const HoDAppBar(title: 'Thống kê giờ giảng'),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thanh tìm kiếm
+            _SearchField(
+              hintText: 'Tìm kiếm theo giảng viên...',
+              onChanged: (value) => setState(() => searchText = value),
+            ),
+            const SizedBox(height: 20),
+
+            // Báo cáo thống kê (4 KPI cards)
+            Text('Báo cáo thống kê', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            GridView.count(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              children: const [
+                _ReportCard(
+                  icon: Icons.bar_chart,
+                  color: Colors.indigo,
+                  title: 'Thống kê giờ giảng',
+                  subtitle: 'Tổng hợp giờ giảng theo giảng viên',
+                ),
+                _ReportCard(
+                  icon: Icons.people_alt_outlined,
+                  color: Colors.blue,
+                  title: 'Thống kê điểm danh',
+                  subtitle: 'Tỷ lệ điểm danh theo lớp, môn học',
+                ),
+                _ReportCard(
+                  icon: Icons.access_time_filled,
+                  color: Colors.amber,
+                  title: 'Thống kê nghỉ, dạy bù',
+                  subtitle: 'Tổng hợp tình hình nghỉ và bù giờ',
+                ),
+                _ReportCard(
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+                  title: 'Tiến độ giảng dạy',
+                  subtitle: 'Tỷ lệ hoàn thành theo kế hoạch',
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Xem trước báo cáo (Giờ giảng)
+            _Section(
+              title: 'Xem trước báo cáo',
+              child: _StatisticsPreview(lecturers: state.lecturers),
+            ),
+            const SizedBox(height: 20),
+
+            // Xuất báo cáo (Form)
+            _Section(
+              title: 'Xuất báo cáo',
+              child: _ExportReportForm(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Widget Card Báo cáo cho StatisticsScreen
+class _ReportCard extends StatelessWidget {
+  const _ReportCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.1),
+                foregroundColor: color,
+                child: Icon(icon),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget Xem trước thống kê
+class _StatisticsPreview extends StatelessWidget {
+  const _StatisticsPreview({required this.lecturers});
+  final List<Lecturer> lecturers;
+
+  @override
+  Widget build(BuildContext context) {
+    if (lecturers.isEmpty) {
+      return const Center(child: Text('Không có dữ liệu giảng viên để xem trước.'));
+    }
+
+    // Giả lập dữ liệu xem trước giờ giảng (chỉ lấy 4 giảng viên đầu)
+    final previewData = lecturers.take(4).map((l) {
+      // Giả lập giờ giảng (đã sử dụng hoursActual và hoursPlanned)
+      final actual = l.hoursActual == 0 ? 25 : l.hoursActual;
+      final planned = l.hoursPlanned == 0 ? 30 : l.hoursPlanned;
+      final percent = actual / planned;
+      return {'name': l.name, 'actual': actual, 'planned': planned, 'percent': percent};
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Giờ giảng', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...previewData.map((data) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(data['name'] as String, style: Theme.of(context).textTheme.bodyMedium),
+                    Text('${data['actual']} giờ', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: data['percent'] as double,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context).primaryColor,
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+}
+
+// Widget Form Xuất báo cáo
+class _ExportReportForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Giá trị mặc định cho Dropdown
+    const List<String> reportTypes = ['Báo cáo giờ giảng', 'Báo cáo điểm danh', 'Báo cáo nghỉ/bù', 'Báo cáo tiến độ'];
+    const List<String> timePeriods = ['Học kỳ hiện tại', 'Học kỳ trước', 'Năm học hiện tại', 'Tùy chọn'];
+    const List<String> formats = ['Excel (.xlsx)', 'PDF (.pdf)'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Loại báo cáo
+        const Text('Loại báo cáo', style: TextStyle(fontWeight: FontWeight.w500)),
+        _SimpleDropdown(value: reportTypes[0], items: reportTypes),
+        const SizedBox(height: 12),
+
+        // Thời gian
+        const Text('Thời gian', style: TextStyle(fontWeight: FontWeight.w500)),
+        _SimpleDropdown(value: timePeriods[0], items: timePeriods),
+        const SizedBox(height: 12),
+
+        // Định dạng
+        const Text('Định dạng', style: TextStyle(fontWeight: FontWeight.w500)),
+        _SimpleDropdown(value: formats[0], items: formats),
+        const SizedBox(height: 20),
+
+        // Nút Xuất báo cáo
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.download),
+            label: const Text('Xuất báo cáo'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Dropdown đơn giản cho Export Form
+class _SimpleDropdown extends StatelessWidget {
+  const _SimpleDropdown({required this.value, required this.items});
+  final String value;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          items: items.map((String item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            // Logic xử lý thay đổi (Chỉ là placeholder cho khung front-end)
+          },
+        ),
+      ),
+    );
+  }
+}
+
+
 class LecturersScreen extends StatefulWidget {
   const LecturersScreen({super.key});
   @override
@@ -716,7 +1023,6 @@ class _AlertTile extends StatelessWidget {
       AlertType.conflict: Icons.calendar_month,
       AlertType.noMakeup: Icons.timelapse,
       AlertType.delay: Icons.bar_chart,
-      AlertType.highLeave: Icons.person_off,
     }[alert.type]!;
     return Card(
       elevation: 0,
@@ -729,7 +1035,7 @@ class _AlertTile extends StatelessWidget {
         trailing: actions
             ? PopupMenuButton<AlertState>(
           initialValue: alert.state,
-          onSelected: (s) => context.read<AppState>().updateAlertState(alert, s),
+          onSelected: (s) => context.read<AppState>().updateAlertState(context.read<AppState>().alerts.indexOf(alert), s),
           itemBuilder: (_) => AlertState.values
               .map((e) => PopupMenuItem(value: e, child: Text(alertStateLabel(e))))
               .toList(),
@@ -803,7 +1109,7 @@ class _Dropdown extends StatelessWidget {
     // Lấy chiều rộng màn hình
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // ĐIỂM ĐÃ CHỈNH SỬA: Đặt chiều rộng tối đa là 90% màn hình trên mobile
+    // Đặt chiều rộng tối đa là 90% màn hình trên mobile
     // và giới hạn tối đa là 300 pixels (thay vì 250) trên màn hình desktop/tablet.
     final dropdownWidth = screenWidth > 600 ? 300.0 : screenWidth * 0.9;
 
@@ -869,16 +1175,33 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _ApproveRejectButtons extends StatelessWidget {
-  const _ApproveRejectButtons({required this.onApprove, required this.onReject});
+// ĐÃ SỬA: Thay đổi widget nút Duyệt/Từ chối thành một widget ApprovalButtons chung
+class _ApprovalButtons extends StatelessWidget {
+  const _ApprovalButtons({required this.onApprove, required this.onReject});
   final VoidCallback onApprove;
   final VoidCallback onReject;
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      FilledButton.icon(onPressed: onApprove, icon: const Icon(Icons.check), label: const Text('Duyệt'), style: FilledButton.styleFrom(backgroundColor: Colors.green)),
+      ElevatedButton(
+        onPressed: onApprove,
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(horizontal: 16)
+        ),
+        child: const Text('Phê duyệt'),
+      ),
       const SizedBox(width: 8),
-      FilledButton.tonalIcon(onPressed: onReject, icon: const Icon(Icons.close), label: const Text('Từ chối'), style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100, foregroundColor: Colors.red)),
+      TextButton(
+        onPressed: onReject,
+        style: TextButton.styleFrom(
+            foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 8)
+        ),
+        child: const Text('Từ chối'),
+      ),
     ]);
   }
 }
@@ -954,8 +1277,9 @@ class HoDWelcomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           Text(
             'Xin chào, Trưởng Bộ môn',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600            ),
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -988,3 +1312,42 @@ class HoDAppBar extends StatelessWidget implements PreferredSizeWidget {
 void _jumpTo(BuildContext context, int index) {
   context.read<AppState>().setTab(index);
 }
+
+// Helper functions for labels
+String statusLabel(SessionStatus status) {
+  switch (status) {
+    case SessionStatus.chuaDay:
+      return 'Chưa dạy';
+    case SessionStatus.daDay:
+      return 'Đã dạy';
+    case SessionStatus.nghi:
+      return 'Nghỉ';
+    case SessionStatus.dayBu:
+      return 'Dạy bù';
+  }
+}
+
+String alertTypeLabel(AlertType type) {
+  switch (type) {
+    case AlertType.conflict:
+      return 'Xung đột lịch';
+    case AlertType.noMakeup:
+      return 'Chưa dạy bù';
+    case AlertType.delay:
+      return 'Chậm tiến độ';
+  }
+}
+
+String alertStateLabel(AlertState state) {
+  switch (state) {
+    case AlertState.unresolved:
+      return 'Chưa giải quyết';
+    case AlertState.inProgress:
+      return 'Đang xử lý';
+    case AlertState.resolved:
+      return 'Đã giải quyết';
+  }
+}
+
+
+
