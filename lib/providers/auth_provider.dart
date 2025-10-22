@@ -47,28 +47,22 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     clearError();
 
-    print('AuthProvider: Bắt đầu đăng nhập cho $email...'); // <-- THÊM DÒNG NÀY
-
     final result = await AuthService.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
 
-    print('AuthProvider: Nhận kết quả từ AuthService: $result'); // <-- THÊM DÒNG NÀY
-
     if (result['success']) {
       _userData = result['userData'];
       _isAuthenticated = true;
-      print('✅ AuthProvider: Đăng nhập THÀNH CÔNG cho ${_userData?.fullName}. Trạng thái isAuthenticated: $_isAuthenticated'); // <-- THÊM DÒNG NÀY
-      _setLoading(false); // Đảm bảo dừng loading khi thành công
-      notifyListeners(); // THÔNG BÁO CHO GIAO DIỆN
+      _setLoading(false);
+      notifyListeners();
       return true;
     } else {
       _setError(result['message']);
-      _isAuthenticated = false; // Đảm bảo trạng thái là false
-      print('❌ AuthProvider: Đăng nhập THẤT BẠI. Lý do: ${result['message']}'); // <-- THÊM DÒNG NÀY
+      _isAuthenticated = false;
       _setLoading(false);
-      notifyListeners(); // THÔNG BÁO CHO GIAO DIỆN
+      notifyListeners();
       return false;
     }
   }

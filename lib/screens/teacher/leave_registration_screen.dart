@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/lesson_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../models/lesson.dart';
+import '../../models/leave_request.dart';
 
 class LeaveRegistrationScreen extends StatefulWidget {
   const LeaveRegistrationScreen({super.key});
@@ -18,6 +20,20 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
   String _selectedReason = '';
   DateTime? _makeupDate;
   final TextEditingController _notesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Setup real-time data streams
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.userData?.id != null) {
+        context.read<LessonProvider>().setupRealtimeStreams(authProvider.userData!.id);
+      } else {
+        context.read<LessonProvider>().setupAllRealtimeStreams();
+      }
+    });
+  }
 
   final List<String> _reasons = [
     'Ốm đau',
@@ -459,6 +475,10 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
       startTime: context.read<LessonProvider>().getLessonById(_selectedLessonId)?.startTime ?? '',
       endTime: context.read<LessonProvider>().getLessonById(_selectedLessonId)?.endTime ?? '',
       additionalNotes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      teacherId: context.read<AuthProvider>().userData?.id ?? 'unknown',
+      requestDate: DateTime.now(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     context.read<LessonProvider>().submitLeaveRequest(leaveRequest);

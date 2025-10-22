@@ -1,8 +1,6 @@
-// lib/services/admin_service.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
-import 'firebase_service.dart'; // Giả sử bạn có file này để lấy instance của firestore
+import 'firebase_service.dart';
 
 class AdminService {
   static final FirebaseFirestore _firestore = FirebaseService.firestore;
@@ -23,7 +21,6 @@ class AdminService {
         'totalClassrooms': results[1].count ?? 0,
         'totalSubjects': results[2].count ?? 0,
         'totalRooms': results[3].count ?? 0,
-        // Thêm các thống kê khác nếu cần
       };
     } catch (e) {
       print('Error getting dashboard stats: $e');
@@ -39,7 +36,6 @@ class AdminService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        // Sử dụng factory constructor đã sửa đổi
         return User.fromJson(doc.id, doc.data());
       }).toList();
     });
@@ -48,8 +44,6 @@ class AdminService {
   // Xóa một người dùng
   static Future<void> deleteUser(String userId) async {
     try {
-      // Lưu ý: Việc xóa người dùng ở Firestore không xóa họ khỏi Firebase Authentication.
-      // Bạn sẽ cần thêm logic xóa khỏi Auth nếu cần.
       await _firestore.collection('users').doc(userId).delete();
       print('User $userId deleted from Firestore.');
     } catch (e) {
@@ -57,5 +51,39 @@ class AdminService {
       rethrow;
     }
   }
-}
 
+  // Lấy tất cả người dùng
+  static Future<List<User>> getAllUsers() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('users').get();
+      return snapshot.docs.map((doc) {
+        return User.fromJson(doc.id, doc.data() as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      print('Error getting all users: $e');
+      return [];
+    }
+  }
+
+  // Cập nhật thông tin người dùng
+  static Future<bool> updateUser(String userId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('users').doc(userId).update(data);
+      return true;
+    } catch (e) {
+      print('Error updating user: $e');
+      return false;
+    }
+  }
+
+  // Tạo người dùng mới
+  static Future<String?> createUser(Map<String, dynamic> userData) async {
+    try {
+      final DocumentReference docRef = await _firestore.collection('users').add(userData);
+      return docRef.id;
+    } catch (e) {
+      print('Error creating user: $e');
+      return null;
+    }
+  }
+}

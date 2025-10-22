@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../providers/lesson_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/lesson_card.dart';
 
@@ -17,6 +18,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _selectedDate = DateTime.now();
   String _selectedSubject = 'Tất cả';
   String _selectedFilter = 'Tất cả';
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Setup real-time data streams
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final lessonProvider = context.read<LessonProvider>();
+      
+      
+      if (authProvider.userData?.id != null) {
+        // Try real-time streams first
+        lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        
+        // Fallback: Load data directly if no data after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
+          }
+        });
+        
+        // Additional fallback: Try loading all lessons if teacher-specific fails
+        Future.delayed(const Duration(seconds: 5), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessons();
+          }
+        });
+      } else {
+        // Try real-time streams for all data
+        lessonProvider.setupAllRealtimeStreams();
+        
+        // Fallback: Load all data if no data after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessons();
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Method to scroll to top
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,10 +84,80 @@ class _CalendarScreenState extends State<CalendarScreen> {
         foregroundColor: Colors.white,
         title: const Text('Lịch Giảng Dạy'),
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              final authProvider = context.read<AuthProvider>();
+              final lessonProvider = context.read<LessonProvider>();
+              
+              if (authProvider.userData?.id != null) {
+                lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
+              } else {
+                lessonProvider.loadLessons();
+              }
+            },
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Làm mới dữ liệu',
+          ),
+          IconButton(
+            onPressed: () {
+              final lessonProvider = context.read<LessonProvider>();
+              lessonProvider.loadLessons();
+            },
+            icon: const Icon(Icons.bug_report),
+            tooltip: 'Debug: Load tất cả lessons',
+          ),
+        ],
       ),
       body: Consumer<LessonProvider>(
         builder: (context, lessonProvider, child) {
           final allLessons = lessonProvider.lessons;
+          
+          
+          // Show loading state
+          if (lessonProvider.isLoading && allLessons.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Đang tải dữ liệu...'),
+                ],
+              ),
+            );
+          }
+          
+          // Show error state
+          if (lessonProvider.error != null && allLessons.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'Lỗi: ${lessonProvider.error}',
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      final authProvider = context.read<AuthProvider>();
+                      if (authProvider.userData?.id != null) {
+                        lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
+                      } else {
+                        lessonProvider.loadLessons();
+                      }
+                    },
+                    child: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            );
+          }
+          
           final subjects = ['Tất cả', ...allLessons.map((l) => l.subject).toSet().toList()];
 
           // Filter lessons based on selected subject
@@ -46,8 +173,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             filteredLessons = filteredLessons.where((l) => !l.isCompleted).toList();
           }
 
-          return Column(
-            children: [
+          return SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            scrollDirection: Axis.vertical,
+            child: Column(
+              children: [
               // Calendar Widget
               Container(
                 margin: const EdgeInsets.all(16),
@@ -97,7 +228,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
 
-                    // Calendar Grid
+                    // Calendar Grid - full width
                     _buildCalendarGrid(),
                   ],
                 ),
@@ -164,78 +295,78 @@ class _CalendarScreenState extends State<CalendarScreen> {
               const SizedBox(height: 16),
 
               // Lessons List
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Lịch môn',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
+                    ),
+                    if (filteredLessons.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          'Lịch môn',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: filteredLessons.isEmpty
-                            ? const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.event_available,
-                                size: 64,
+                        padding: EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.event_available,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Không có buổi học nào',
+                              style: TextStyle(
                                 color: Colors.grey,
+                                fontSize: 16,
                               ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Không có buổi học nào',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                            : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: filteredLessons.length,
-                          itemBuilder: (context, index) {
-                            final lesson = filteredLessons[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: LessonCard(
-                                lesson: lesson,
-                                onTap: () {
-                                  context.go('/lesson-detail/${lesson.id}');
-                                },
-                              ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
+                      )
+                    else
+                      ...filteredLessons.map((lesson) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: LessonCard(
+                            lesson: lesson,
+                            onTap: () {
+                              context.go('/lesson-detail/${lesson.id}');
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    const SizedBox(height: 16), // Thêm khoảng trống cuối
+                  ],
                 ),
               ),
+              const SizedBox(height: 20), // Thêm khoảng trống cuối cho cuộn
             ],
-          );
+          ));
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _scrollToTop,
+        backgroundColor: const Color(0xFF6B46C1),
+        child: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
+        mini: true,
       ),
       bottomNavigationBar: const BottomNavigation(currentIndex: 1),
     );
@@ -249,7 +380,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final daysInMonth = lastDayOfMonth.day;
     final totalCells = firstWeekday - 1 + daysInMonth;
 
-    return Padding(
+    return Container(
+      width: double.infinity, // Use full available width
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -295,11 +427,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       });
                     },
                     child: Container(
-                      height: 40,
-                      margin: const EdgeInsets.all(2),
+                      height: 50, // Increased height for better touch target
+                      margin: const EdgeInsets.all(1), // Reduced margin for better space usage
                       decoration: BoxDecoration(
                         color: isToday ? const Color(0xFF6B46C1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(8), // Slightly rounded corners
+                        border: isToday ? Border.all(color: const Color(0xFF6B46C1), width: 2) : null,
                       ),
                       child: Center(
                         child: Text(
@@ -311,6 +444,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 ? Colors.red
                                 : Colors.black87,
                             fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 16, // Consistent font size
                           ),
                         ),
                       ),

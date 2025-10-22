@@ -1,172 +1,199 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/lesson.dart';
+import 'firebase_service.dart';
 
 class LessonService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Lấy tất cả lịch dạy
-  Stream<List<Lesson>> getLessonsStream(String teacherId) {
-    return _firestore
-        .collection('schedules')
-        .where('teacherId', isEqualTo: teacherId)
-        .orderBy('date', descending: false)
-        .snapshots()
-        .map((snapshot) {
+  // Lấy tất cả lessons
+  static Future<List<Lesson>> getAllLessons() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('lessons').get();
       return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return Lesson(
-          id: doc.id,
-          subject: data['subjectName'] ?? '',
-          className: data['className'] ?? '',
-          date: (data['date'] as Timestamp).toDate(),
-          startTime: data['startTime'] ?? '',
-          endTime: data['endTime'] ?? '',
-          room: data['roomName'] ?? '',
-          status: _calculateStatus(
-            (data['date'] as Timestamp).toDate(),
-            data['startTime'] ?? '',
-            data['endTime'] ?? '',
-          ),
-          sessionNumber: data['sessionNumber'] ?? 1,
-          sessionTitle: data['sessionTitle'] ?? '',
-          content: data['content'],
-          attendanceList: List<String>.from(data['attendanceList'] ?? []),
-          isCompleted: data['isCompleted'] ?? false,
-        );
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
-    });
+    } catch (e) {
+      print('Error getting lessons: $e');
+      return [];
+    }
   }
 
-  // Lấy lịch dạy theo ID
-  Future<Lesson?> getLessonById(String lessonId) async {
+  // Lấy lessons theo teacher ID
+  static Future<List<Lesson>> getLessonsByTeacher(String teacherId) async {
     try {
-      final doc = await _firestore.collection('schedules').doc(lessonId).get();
-      if (!doc.exists) return null;
-
-      final data = doc.data()!;
-      return Lesson(
-        id: doc.id,
-        subject: data['subjectName'] ?? '',
-        className: data['className'] ?? '',
-        date: (data['date'] as Timestamp).toDate(),
-        startTime: data['startTime'] ?? '',
-        endTime: data['endTime'] ?? '',
-        room: data['roomName'] ?? '',
-        status: _calculateStatus(
-          (data['date'] as Timestamp).toDate(),
-          data['startTime'] ?? '',
-          data['endTime'] ?? '',
-        ),
-        sessionNumber: data['sessionNumber'] ?? 1,
-        sessionTitle: data['sessionTitle'] ?? '',
-        content: data['content'],
-        attendanceList: List<String>.from(data['attendanceList'] ?? []),
-        isCompleted: data['isCompleted'] ?? false,
-      );
+      final QuerySnapshot snapshot = await _firestore
+          .collection('lessons')
+          .where('teacherId', isEqualTo: teacherId)
+          .get();
+      return snapshot.docs.map((doc) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
     } catch (e) {
-      print('Error getting lesson: $e');
+      print('Error getting lessons by teacher: $e');
+      return [];
+    }
+  }
+
+  // Lấy lessons theo ngày
+  static Future<List<Lesson>> getLessonsByDate(DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+      
+      final QuerySnapshot snapshot = await _firestore
+          .collection('lessons')
+          .where('date', isGreaterThanOrEqualTo: startOfDay)
+          .where('date', isLessThanOrEqualTo: endOfDay)
+          .get();
+      return snapshot.docs.map((doc) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    } catch (e) {
+      print('Error getting lessons by date: $e');
+      return [];
+    }
+  }
+
+  // Lấy lessons theo teacher và ngày
+  static Future<List<Lesson>> getLessonsByTeacherAndDate(String teacherId, DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+      
+      final QuerySnapshot snapshot = await _firestore
+          .collection('lessons')
+          .where('teacherId', isEqualTo: teacherId)
+          .where('date', isGreaterThanOrEqualTo: startOfDay)
+          .where('date', isLessThanOrEqualTo: endOfDay)
+          .get();
+      return snapshot.docs.map((doc) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    } catch (e) {
+      print('Error getting lessons by teacher and date: $e');
+      return [];
+    }
+  }
+
+  // Lấy lesson theo ID
+  static Future<Lesson?> getLessonById(String lessonId) async {
+    try {
+      final DocumentSnapshot doc = await _firestore.collection('lessons').doc(lessonId).get();
+      if (doc.exists) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting lesson by ID: $e');
       return null;
     }
   }
 
-  // Cập nhật nội dung bài học
-  Future<void> updateLessonContent(String lessonId, String content) async {
-    await _firestore.collection('schedules').doc(lessonId).update({
-      'content': content,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  // Tạo lesson mới
+  static Future<String?> createLesson(Lesson lesson) async {
+    try {
+      final DocumentReference docRef = await _firestore.collection('lessons').add(lesson.toMap());
+      return docRef.id;
+    } catch (e) {
+      print('Error creating lesson: $e');
+      return null;
+    }
   }
 
-  // Cập nhật điểm danh
-  Future<void> updateAttendance(String lessonId, List<String> attendanceList) async {
-    await _firestore.collection('schedules').doc(lessonId).update({
-      'attendanceList': attendanceList,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  // Cập nhật lesson
+  static Future<bool> updateLesson(String lessonId, Lesson lesson) async {
+    try {
+      await _firestore.collection('lessons').doc(lessonId).update(lesson.toMap());
+      return true;
+    } catch (e) {
+      print('Error updating lesson: $e');
+      return false;
+    }
   }
 
-  // Gửi đơn xin nghỉ
-  Future<void> submitLeaveRequest(LeaveRequest request) async {
-    await _firestore.collection('leaveRequests').add({
-      'lessonId': request.lessonId,
-      'type': request.type,
-      'reason': request.reason,
-      'makeupDate': request.makeupDate != null
-          ? Timestamp.fromDate(request.makeupDate!)
-          : null,
-      'startTime': request.startTime,
-      'endTime': request.endTime,
-      'additionalNotes': request.additionalNotes,
-      'status': request.status,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+  // Xóa lesson
+  static Future<bool> deleteLesson(String lessonId) async {
+    try {
+      await _firestore.collection('lessons').doc(lessonId).delete();
+      return true;
+    } catch (e) {
+      print('Error deleting lesson: $e');
+      return false;
+    }
   }
 
-  // Lấy danh sách đơn xin nghỉ
-  Stream<List<LeaveRequest>> getLeaveRequestsStream(String teacherId) {
+  // Cập nhật nội dung lesson
+  static Future<bool> updateLessonContent(String lessonId, String content) async {
+    try {
+      await _firestore.collection('lessons').doc(lessonId).update({
+        'content': content,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      print('Error updating lesson content: $e');
+      return false;
+    }
+  }
+
+  // Cập nhật danh sách điểm danh
+  static Future<bool> updateAttendance(String lessonId, List<String> attendanceList) async {
+    try {
+      await _firestore.collection('lessons').doc(lessonId).update({
+        'attendanceList': attendanceList,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      print('Error updating attendance: $e');
+      return false;
+    }
+  }
+
+  // Đánh dấu lesson đã hoàn thành
+  static Future<bool> markLessonCompleted(String lessonId) async {
+    try {
+      await _firestore.collection('lessons').doc(lessonId).update({
+        'isCompleted': true,
+        'status': 'completed',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      print('Error marking lesson completed: $e');
+      return false;
+    }
+  }
+
+  // Stream lessons theo teacher (real-time updates)
+  static Stream<List<Lesson>> getLessonsStreamByTeacher(String teacherId) {
     return _firestore
-        .collection('leaveRequests')
+        .collection('lessons')
         .where('teacherId', isEqualTo: teacherId)
-        .orderBy('createdAt', descending: true)
+        .orderBy('date')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return LeaveRequest(
-          id: doc.id,
-          lessonId: data['lessonId'] ?? '',
-          type: data['type'] ?? 'leave',
-          reason: data['reason'] ?? '',
-          makeupDate: data['makeupDate'] != null
-              ? (data['makeupDate'] as Timestamp).toDate()
-              : null,
-          startTime: data['startTime'] ?? '',
-          endTime: data['endTime'] ?? '',
-          additionalNotes: data['additionalNotes'],
-          status: data['status'] ?? 'pending',
-        );
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
     });
   }
 
-  // Tính toán trạng thái bài học
-  String _calculateStatus(DateTime date, String startTime, String endTime) {
-    final now = DateTime.now();
-    final lessonDate = DateTime(date.year, date.month, date.day);
-    final today = DateTime(now.year, now.month, now.day);
-
-    if (lessonDate.isBefore(today)) {
-      return 'completed';
-    } else if (lessonDate.isAfter(today)) {
-      return 'upcoming';
-    } else {
-      // Cùng ngày - kiểm tra giờ
-      final startParts = startTime.split(':');
-      final endParts = endTime.split(':');
-
-      final lessonStart = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        int.parse(startParts[0]),
-        int.parse(startParts[1]),
-      );
-
-      final lessonEnd = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        int.parse(endParts[0]),
-        int.parse(endParts[1]),
-      );
-
-      if (now.isBefore(lessonStart)) {
-        return 'upcoming';
-      } else if (now.isAfter(lessonEnd)) {
-        return 'completed';
-      } else {
-        return 'ongoing';
-      }
-    }
+  // Stream lessons theo ngày (real-time updates)
+  static Stream<List<Lesson>> getLessonsStreamByDate(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    
+    return _firestore
+        .collection('lessons')
+        .where('date', isGreaterThanOrEqualTo: startOfDay)
+        .where('date', isLessThanOrEqualTo: endOfDay)
+        .orderBy('startTime')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
   }
 }

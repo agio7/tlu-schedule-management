@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/lesson.dart';
+import '../models/leave_request.dart';
 import '../providers/lesson_provider.dart';
 
 class LeaveRegistrationTab extends StatefulWidget {
@@ -329,6 +330,10 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
       startTime: widget.lesson.startTime,
       endTime: widget.lesson.endTime,
       additionalNotes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      teacherId: 'teacher_001', // TODO: Lấy từ auth provider
+      requestDate: DateTime.now(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     context.read<LessonProvider>().submitLeaveRequest(leaveRequest);

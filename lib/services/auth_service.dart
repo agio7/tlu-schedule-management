@@ -39,18 +39,16 @@ class AuthService {
     }
   }
 
-  // PHIÊN BẢN CẬP NHẬT
   static Future<User?> getUserDataFromFirestore(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
 
       if (doc.exists) {
-        // 1. Truyền cả ID của tài liệu và dữ liệu vào hàm fromJson
         return User.fromJson(doc.id, doc.data()!);
       }
       return null;
     } catch (e) {
-      print('💥 AuthService: Error getting user data from Firestore: $e');
+      print('Error getting user data: $e');
       return null;
     }
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/lesson_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/bottom_navigation.dart';
+import '../../models/leave_request.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -14,6 +16,20 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   String _selectedPeriod = 'tháng';
   DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Setup real-time data streams
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.userData?.id != null) {
+        context.read<LessonProvider>().setupRealtimeStreams(authProvider.userData!.id);
+      } else {
+        context.read<LessonProvider>().setupAllRealtimeStreams();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

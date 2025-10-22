@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
+import '../screens/teacher/dashboard_screen.dart';
+import '../screens/admin/admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,17 +32,41 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // Simulate login process
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Sử dụng AuthProvider để đăng nhập
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final success = await authProvider.signInWithEmailAndPassword(
+          email: _usernameController.text,
+          password: _passwordController.text,
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
 
-      // Navigate to admin dashboard
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AdminDashboard()),
-      );
+        if (success) {
+          // Sử dụng GoRouter để điều hướng
+          context.go('/dashboard');
+        } else {
+          // Hiển thị lỗi đăng nhập
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Đăng nhập thất bại'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -233,11 +262,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Tên đăng nhập: admin',
+                                'Giảng viên: teacher@tlu.edu.vn / 123456',
                                 style: TextStyle(color: Colors.grey),
                               ),
                               Text(
-                                'Mật khẩu: 123456',
+                                'Admin: admin@tlu.edu.vn / 123456',
                                 style: TextStyle(color: Colors.grey),
                               ),
                             ],
