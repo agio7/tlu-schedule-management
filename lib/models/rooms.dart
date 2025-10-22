@@ -1,35 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Room {
+class Rooms {
   final String id;
   final String name;
   final String code;
   final String? building;
   final int capacity;
-  final String type; // 'lecture', 'lab', 'seminar'
-  final int floor;
-  final List<String> equipment; // Thiết bị có sẵn
-  final String? description;
-  final bool isAvailable;
+  final String? type; // Loại phòng (lecture, lab, computer, etc.)
+  final int? floor; // Tầng
+  final String? description; // Mô tả phòng
+  final List<String>? equipment; // Thiết bị trong phòng
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  Room({
+  Rooms({
     required this.id,
     required this.name,
     required this.code,
     this.building,
     required this.capacity,
-    required this.type,
-    required this.floor,
-    required this.equipment,
+    this.type,
+    this.floor,
     this.description,
-    required this.isAvailable,
+    this.equipment,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory Room.fromJson(Map<String, dynamic> json) {
+  factory Rooms.fromJson(String id, Map<String, dynamic> json) {
     DateTime parseTimestamp(dynamic timestamp) {
       if (timestamp is Timestamp) {
         return timestamp.toDate();
@@ -40,17 +38,18 @@ class Room {
       return DateTime.now();
     }
 
-    return Room(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      building: json['building'],
-      capacity: json['capacity'] ?? 0,
-      type: json['type'] ?? 'lecture',
-      floor: json['floor'] ?? 1,
-      equipment: List<String>.from(json['equipment'] ?? []),
-      description: json['description'],
-      isAvailable: json['isAvailable'] ?? true,
+    return Rooms(
+      id: id,
+      name: json['name'] as String? ?? '',
+      code: json['code'] as String? ?? '',
+      building: json['building'] as String?,
+      capacity: json['capacity'] as int? ?? 0,
+      type: json['type'] as String?,
+      floor: json['floor'] as int?,
+      description: json['description'] as String?,
+      equipment: json['equipment'] != null 
+          ? List<String>.from(json['equipment'] as List)
+          : null,
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
     );
@@ -58,22 +57,20 @@ class Room {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'code': code,
       'building': building,
       'capacity': capacity,
       'type': type,
       'floor': floor,
-      'equipment': equipment,
       'description': description,
-      'isAvailable': isAvailable,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'equipment': equipment,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  Room copyWith({
+  Rooms copyWith({
     String? id,
     String? name,
     String? code,
@@ -81,13 +78,12 @@ class Room {
     int? capacity,
     String? type,
     int? floor,
-    List<String>? equipment,
     String? description,
-    bool? isAvailable,
+    List<String>? equipment,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return Room(
+    return Rooms(
       id: id ?? this.id,
       name: name ?? this.name,
       code: code ?? this.code,
@@ -95,14 +91,10 @@ class Room {
       capacity: capacity ?? this.capacity,
       type: type ?? this.type,
       floor: floor ?? this.floor,
-      equipment: equipment ?? this.equipment,
       description: description ?? this.description,
-      isAvailable: isAvailable ?? this.isAvailable,
+      equipment: equipment ?? this.equipment,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
-
-
-

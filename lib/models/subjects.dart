@@ -1,31 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Classroom {
+class Subjects {
   final String id;
   final String name;
   final String code;
   final String departmentId;
-  final String academicYear; // Năm học (2024-2025)
-  final String semester; // Học kỳ (1, 2, 3)
-  final int studentCount;
-  final String? description;
+  final int credits;
+  final int totalHours;
+  final String? description; // Mô tả môn học
+  final List<String>? prerequisites; // Môn học tiên quyết
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  Classroom({
+  Subjects({
     required this.id,
     required this.name,
     required this.code,
     required this.departmentId,
-    required this.academicYear,
-    required this.semester,
-    required this.studentCount,
+    required this.credits,
+    required this.totalHours,
     this.description,
+    this.prerequisites,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory Classroom.fromJson(Map<String, dynamic> json) {
+  factory Subjects.fromJson(String id, Map<String, dynamic> json) {
     DateTime parseTimestamp(dynamic timestamp) {
       if (timestamp is Timestamp) {
         return timestamp.toDate();
@@ -36,15 +36,17 @@ class Classroom {
       return DateTime.now();
     }
 
-    return Classroom(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      departmentId: json['departmentId'] ?? '',
-      academicYear: json['academicYear'] ?? '',
-      semester: json['semester'] ?? '',
-      studentCount: json['studentCount'] ?? 0,
-      description: json['description'],
+    return Subjects(
+      id: id,
+      name: json['name'] as String? ?? '',
+      code: json['code'] as String? ?? '',
+      departmentId: json['departmentId'] as String? ?? '',
+      credits: json['credits'] as int? ?? 0,
+      totalHours: json['totalHours'] as int? ?? 0,
+      description: json['description'] as String?,
+      prerequisites: json['prerequisites'] != null 
+          ? List<String>.from(json['prerequisites'] as List)
+          : null,
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
     );
@@ -52,45 +54,41 @@ class Classroom {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'code': code,
       'departmentId': departmentId,
-      'academicYear': academicYear,
-      'semester': semester,
-      'studentCount': studentCount,
+      'credits': credits,
+      'totalHours': totalHours,
       'description': description,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'prerequisites': prerequisites,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  Classroom copyWith({
+  Subjects copyWith({
     String? id,
     String? name,
     String? code,
     String? departmentId,
-    String? academicYear,
-    String? semester,
-    int? studentCount,
+    int? credits,
+    int? totalHours,
     String? description,
+    List<String>? prerequisites,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return Classroom(
+    return Subjects(
       id: id ?? this.id,
       name: name ?? this.name,
       code: code ?? this.code,
       departmentId: departmentId ?? this.departmentId,
-      academicYear: academicYear ?? this.academicYear,
-      semester: semester ?? this.semester,
-      studentCount: studentCount ?? this.studentCount,
+      credits: credits ?? this.credits,
+      totalHours: totalHours ?? this.totalHours,
       description: description ?? this.description,
+      prerequisites: prerequisites ?? this.prerequisites,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
-
-
-

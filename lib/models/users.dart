@@ -1,94 +1,102 @@
-// models/user.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class User {
+class Users {
   final String id;
   final String email;
   final String fullName;
-  final String role;
+  final String role; // 'teacher', 'staff', 'admin'
   final String? departmentId;
-  final String? phoneNumber;
+  final String? employeeId;
+  final String? academicRank;
   final String? avatar;
+  final String? specialization;
+  final String? phoneNumber;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  User({
+  Users({
     required this.id,
     required this.email,
     required this.fullName,
     required this.role,
     this.departmentId,
-    this.phoneNumber,
+    this.employeeId,
+    this.academicRank,
     this.avatar,
+    this.specialization,
+    this.phoneNumber,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // PHIÊN BẢN CẬP NHẬT - AN TOÀN HƠN
-  factory User.fromJson(String id, Map<String, dynamic> json) {
-    // Hàm an toàn để chuyển đổi Timestamp sang DateTime
+  factory Users.fromJson(String id, Map<String, dynamic> json) {
     DateTime parseTimestamp(dynamic timestamp) {
       if (timestamp is Timestamp) {
         return timestamp.toDate();
       }
-      // Nếu dữ liệu là String (từ code cũ), thử parse
       if (timestamp is String) {
         return DateTime.tryParse(timestamp) ?? DateTime.now();
       }
       return DateTime.now();
     }
 
-    return User(
-      // 1. Lấy ID từ tham số truyền vào, không phải từ json
+    return Users(
       id: id,
-      // 2. Cung cấp giá trị mặc định để tránh lỗi 'null'
       email: json['email'] as String? ?? '',
       fullName: json['fullName'] as String? ?? 'Người dùng không tên',
-      role: json['role'] as String? ?? 'teacher', // Mặc định là teacher nếu thiếu
+      role: json['role'] as String? ?? 'teacher',
       departmentId: json['departmentId'] as String?,
-      phoneNumber: json['phoneNumber'] as String?,
+      employeeId: json['employeeId'] as String?,
+      academicRank: json['academicRank'] as String?,
       avatar: json['avatar'] as String?,
-      // 3. Xử lý Timestamp một cách an toàn
+      specialization: json['specialization'] as String?,
+      phoneNumber: json['phoneNumber'] as String?,
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
     );
   }
 
-  // Các hàm toJson và copyWith không cần thay đổi
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'email': email,
       'fullName': fullName,
       'role': role,
       'departmentId': departmentId,
-      'phoneNumber': phoneNumber,
+      'employeeId': employeeId,
+      'academicRank': academicRank,
       'avatar': avatar,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'specialization': specialization,
+      'phoneNumber': phoneNumber,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  User copyWith({
+  Users copyWith({
     String? id,
     String? email,
     String? fullName,
     String? role,
     String? departmentId,
-    String? phoneNumber,
+    String? employeeId,
+    String? academicRank,
     String? avatar,
+    String? specialization,
+    String? phoneNumber,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return User(
+    return Users(
       id: id ?? this.id,
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
       role: role ?? this.role,
       departmentId: departmentId ?? this.departmentId,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
+      employeeId: employeeId ?? this.employeeId,
+      academicRank: academicRank ?? this.academicRank,
       avatar: avatar ?? this.avatar,
+      specialization: specialization ?? this.specialization,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,0 +1,489 @@
+{
+  "info": {
+    "name": "Firebase API Tests",
+    "description": "Complete Firebase REST API testing collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "firebase_api_key",
+      "value": "YOUR_FIREBASE_API_KEY",
+      "type": "string"
+    },
+    {
+      "key": "firebase_project_id",
+      "value": "YOUR_PROJECT_ID",
+      "type": "string"
+    },
+    {
+      "key": "base_url",
+      "value": "https://identitytoolkit.googleapis.com/v1/accounts",
+      "type": "string"
+    },
+    {
+      "key": "firestore_url",
+      "value": "https://firestore.googleapis.com/v1/projects/{{firebase_project_id}}/databases/(default)/documents",
+      "type": "string"
+    },
+    {
+      "key": "id_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@tlu.edu.vn\",\n  \"password\": \"admin123\",\n  \"returnSecureToken\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/accounts:signInWithPassword?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts:signInWithPassword"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has idToken\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('idToken');",
+                  "    pm.environment.set(\"id_token\", response.idToken);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has refreshToken\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('refreshToken');",
+                  "    pm.environment.set(\"refresh_token\", response.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"returnSecureToken\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/accounts:signUp?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts:signUp"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Info",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{id_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/accounts:lookup?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts:lookup"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"refresh_token\",\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/token?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["token"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sign Out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{id_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/accounts:signOut?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts:signOut"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firestore",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fields\": {\n    \"email\": {\n      \"stringValue\": \"admin@tlu.edu.vn\"\n    },\n    \"fullName\": {\n      \"stringValue\": \"Admin System\"\n    },\n    \"role\": {\n      \"stringValue\": \"admin\"\n    },\n    \"createdAt\": {\n      \"timestampValue\": \"2024-01-01T00:00:00Z\"\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{firestore_url}}/users",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users"]
+                }
+              }
+            },
+            {
+              "name": "Get User",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{firestore_url}}/users/USER_DOCUMENT_ID",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users", "USER_DOCUMENT_ID"]
+                }
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fields\": {\n    \"updatedAt\": {\n      \"timestampValue\": \"2024-01-01T00:00:00Z\"\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{firestore_url}}/users/USER_DOCUMENT_ID",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users", "USER_DOCUMENT_ID"]
+                }
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{firestore_url}}/users/USER_DOCUMENT_ID",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users", "USER_DOCUMENT_ID"]
+                }
+              }
+            },
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{firestore_url}}/users",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Departments",
+          "item": [
+            {
+              "name": "Create Department",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fields\": {\n    \"name\": {\n      \"stringValue\": \"Công nghệ thông tin\"\n    },\n    \"description\": {\n      \"stringValue\": \"Khoa CNTT\"\n    },\n    \"createdAt\": {\n      \"timestampValue\": \"2024-01-01T00:00:00Z\"\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{firestore_url}}/departments",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["departments"]
+                }
+              }
+            },
+            {
+              "name": "List Departments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{firestore_url}}/departments",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["departments"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subjects",
+          "item": [
+            {
+              "name": "Create Subject",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fields\": {\n    \"name\": {\n      \"stringValue\": \"Lập trình Flutter\"\n    },\n    \"code\": {\n      \"stringValue\": \"FLUTTER001\"\n    },\n    \"credits\": {\n      \"integerValue\": \"3\"\n    },\n    \"departmentId\": {\n      \"stringValue\": \"DEPARTMENT_ID\"\n    },\n    \"createdAt\": {\n      \"timestampValue\": \"2024-01-01T00:00:00Z\"\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{firestore_url}}/subjects",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["subjects"]
+                }
+              }
+            },
+            {
+              "name": "List Subjects",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{firestore_url}}/subjects",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["subjects"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Query Tests",
+          "item": [
+            {
+              "name": "Query by Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{id_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"structuredQuery\": {\n    \"where\": {\n      \"fieldFilter\": {\n        \"field\": {\n          \"fieldPath\": \"role\"\n        },\n        \"op\": \"EQUAL\",\n        \"value\": {\n          \"stringValue\": \"admin\"\n        }\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{firestore_url}}/users:runQuery",
+                  "host": ["{{firestore_url}}"],
+                  "path": ["users:runQuery"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "item": [
+        {
+          "name": "Invalid Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid@test.com\",\n  \"password\": \"wrongpassword\",\n  \"returnSecureToken\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/accounts:signInWithPassword?key={{firebase_api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts:signInWithPassword"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

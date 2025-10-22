@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../models/user.dart';
+import '../models/users.dart';
 
 class AuthProvider with ChangeNotifier {
-  User? _userData;
+  Users? _userData;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _errorMessage;
 
-  User? get userData => _userData;
+  Users? get userData => _userData;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;

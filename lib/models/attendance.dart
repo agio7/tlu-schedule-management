@@ -11,9 +11,7 @@ class Attendance {
   final String id;
   final String scheduleId;
   final String studentId;
-  final String studentName;
   final AttendanceStatus status;
-  final DateTime? checkInTime;
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,47 +20,67 @@ class Attendance {
     required this.id,
     required this.scheduleId,
     required this.studentId,
-    required this.studentName,
     required this.status,
-    this.checkInTime,
     this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory Attendance.fromJson(Map<String, dynamic> json) {
+  factory Attendance.fromJson(String id, Map<String, dynamic> json) {
+    DateTime parseTimestamp(dynamic timestamp) {
+      if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      }
+      if (timestamp is String) {
+        return DateTime.tryParse(timestamp) ?? DateTime.now();
+      }
+      return DateTime.now();
+    }
+
     return Attendance(
-      id: json['id'],
-      scheduleId: json['scheduleId'],
-      studentId: json['studentId'],
-      studentName: json['studentName'],
+      id: id,
+      scheduleId: json['scheduleId'] as String? ?? '',
+      studentId: json['studentId'] as String? ?? '',
       status: AttendanceStatus.values.firstWhere(
         (e) => e.toString() == 'AttendanceStatus.${json['status']}',
         orElse: () => AttendanceStatus.present,
       ),
-      checkInTime: json['checkInTime'] != null 
-          ? (json['checkInTime'] as Timestamp).toDate() 
-          : null,
-      notes: json['notes'],
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      notes: json['notes'] as String?,
+      createdAt: parseTimestamp(json['createdAt']),
+      updatedAt: parseTimestamp(json['updatedAt']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'scheduleId': scheduleId,
       'studentId': studentId,
-      'studentName': studentName,
       'status': status.toString().split('.').last,
-      'checkInTime': checkInTime != null ? Timestamp.fromDate(checkInTime!) : null,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
-}
 
+  Attendance copyWith({
+    String? id,
+    String? scheduleId,
+    String? studentId,
+    AttendanceStatus? status,
+    String? notes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Attendance(
+      id: id ?? this.id,
+      scheduleId: scheduleId ?? this.scheduleId,
+      studentId: studentId ?? this.studentId,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
 
 

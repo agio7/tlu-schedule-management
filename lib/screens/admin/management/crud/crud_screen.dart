@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/admin_provider.dart';
-import '../../../../models/teacher.dart';
-import '../../../../models/subject.dart';
-import '../../../../models/classroom.dart';
-import '../../../../models/room.dart';
+import '../../../../models/users.dart';
+import '../../../../models/subjects.dart';
+import '../../../../models/classrooms.dart';
+import '../../../../models/rooms.dart';
 
 class CRUDScreen extends StatefulWidget {
   final String type;
@@ -43,7 +43,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
       
       switch (widget.type) {
         case 'Giảng viên':
-          await adminProvider.loadTeachers();
+          await adminProvider.loadUsers();
           break;
         case 'Môn học':
           await adminProvider.loadSubjects();
@@ -264,26 +264,26 @@ class _CRUDScreenState extends State<CRUDScreen> {
     return items.where((item) {
       switch (widget.type) {
         case 'Giảng viên':
-          final teacher = item as Teacher;
+          final teacher = item as Users;
           return teacher.fullName.toLowerCase().contains(query) ||
                  teacher.email.toLowerCase().contains(query) ||
                  (teacher.employeeId?.toLowerCase().contains(query) ?? false) ||
                  (teacher.specialization?.toLowerCase().contains(query) ?? false);
         case 'Môn học':
-          final subject = item as Subject;
+          final subject = item as Subjects;
           return subject.name.toLowerCase().contains(query) ||
                  subject.code.toLowerCase().contains(query) ||
                  (subject.description?.toLowerCase().contains(query) ?? false);
         case 'Lớp học':
-          final classroom = item as Classroom;
+          final classroom = item as Classrooms;
           return classroom.name.toLowerCase().contains(query) ||
                  classroom.code.toLowerCase().contains(query) ||
                  (classroom.description?.toLowerCase().contains(query) ?? false);
         case 'Phòng học':
-          final room = item as Room;
+          final room = item as Rooms;
           return room.name.toLowerCase().contains(query) ||
                  room.code.toLowerCase().contains(query) ||
-                 room.type.toLowerCase().contains(query) ||
+                 (room.type?.toLowerCase().contains(query) ?? false) ||
                  (room.building?.toLowerCase().contains(query) ?? false) ||
                  (room.description?.toLowerCase().contains(query) ?? false);
         default:
@@ -295,13 +295,13 @@ class _CRUDScreenState extends State<CRUDScreen> {
   String _getItemTitle(dynamic item) {
     switch (widget.type) {
       case 'Giảng viên':
-        return (item as Teacher).fullName;
+        return (item as Users).fullName;
       case 'Môn học':
-        return (item as Subject).name;
+        return (item as Subjects).name;
       case 'Lớp học':
-        return (item as Classroom).name;
+        return (item as Classrooms).name;
       case 'Phòng học':
-        return (item as Room).name;
+        return (item as Rooms).name;
       default:
         return '';
     }
@@ -310,16 +310,16 @@ class _CRUDScreenState extends State<CRUDScreen> {
   String _getItemSubtitle(dynamic item) {
     switch (widget.type) {
       case 'Giảng viên':
-        final teacher = item as Teacher;
+        final teacher = item as Users;
         return '${teacher.email} - ${teacher.specialization ?? "Chưa rõ chuyên ngành"}';
       case 'Môn học':
-        final subject = item as Subject;
+        final subject = item as Subjects;
         return '${subject.code} - ${subject.credits} tín chỉ';
       case 'Lớp học':
-        final classroom = item as Classroom;
+        final classroom = item as Classrooms;
         return '${classroom.studentCount} sinh viên - ${classroom.academicYear}';
       case 'Phòng học':
-        final room = item as Room;
+        final room = item as Rooms;
         return '${room.capacity} chỗ - ${room.type} - Tầng ${room.floor}';
       default:
         return '';
@@ -430,7 +430,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
     
     switch (widget.type) {
       case 'Giảng viên':
-        final teacher = item as Teacher?;
+        final teacher = item as Users?;
         controllers['fullName'] = TextEditingController(text: teacher?.fullName ?? '');
         controllers['email'] = TextEditingController(text: teacher?.email ?? '');
         controllers['phoneNumber'] = TextEditingController(text: teacher?.phoneNumber ?? '');
@@ -439,16 +439,16 @@ class _CRUDScreenState extends State<CRUDScreen> {
         controllers['academicRank'] = TextEditingController(text: teacher?.academicRank ?? '');
         break;
       case 'Môn học':
-        final subject = item as Subject?;
+        final subject = item as Subjects?;
         controllers['name'] = TextEditingController(text: subject?.name ?? '');
         controllers['code'] = TextEditingController(text: subject?.code ?? '');
         controllers['credits'] = TextEditingController(text: subject?.credits.toString() ?? '');
         controllers['totalHours'] = TextEditingController(text: subject?.totalHours.toString() ?? '');
         controllers['description'] = TextEditingController(text: subject?.description ?? '');
-        controllers['prerequisites'] = TextEditingController(text: subject?.prerequisites ?? '');
+        controllers['prerequisites'] = TextEditingController(text: subject?.prerequisites?.join(', ') ?? '');
         break;
       case 'Lớp học':
-        final classroom = item as Classroom?;
+        final classroom = item as Classrooms?;
         controllers['name'] = TextEditingController(text: classroom?.name ?? '');
         controllers['code'] = TextEditingController(text: classroom?.code ?? '');
         controllers['academicYear'] = TextEditingController(text: classroom?.academicYear ?? '');
@@ -457,7 +457,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
         controllers['description'] = TextEditingController(text: classroom?.description ?? '');
         break;
       case 'Phòng học':
-        final room = item as Room?;
+        final room = item as Rooms?;
         controllers['name'] = TextEditingController(text: room?.name ?? '');
         controllers['code'] = TextEditingController(text: room?.code ?? '');
         controllers['building'] = TextEditingController(text: room?.building ?? '');
@@ -465,7 +465,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
         controllers['type'] = TextEditingController(text: room?.type ?? '');
         controllers['floor'] = TextEditingController(text: room?.floor.toString() ?? '');
         controllers['description'] = TextEditingController(text: room?.description ?? '');
-        controllers['equipment'] = TextEditingController(text: room?.equipment.join(', ') ?? '');
+        controllers['equipment'] = TextEditingController(text: room?.equipment?.join(', ') ?? '');
         break;
     }
     
@@ -884,7 +884,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
       
       switch (widget.type) {
         case 'Giảng viên':
-          await adminProvider.addTeacher(formData);
+          await adminProvider.addUser(formData);
           break;
         case 'Môn học':
           await adminProvider.addSubject(formData);
@@ -924,19 +924,19 @@ class _CRUDScreenState extends State<CRUDScreen> {
       
       switch (widget.type) {
         case 'Giảng viên':
-          final teacher = item as Teacher;
-          await adminProvider.updateTeacher(teacher.id, formData);
+          final teacher = item as Users;
+          await adminProvider.updateUser(teacher.id, formData);
           break;
         case 'Môn học':
-          final subject = item as Subject;
+          final subject = item as Subjects;
           await adminProvider.updateSubject(subject.id, formData);
           break;
         case 'Lớp học':
-          final classroom = item as Classroom;
+          final classroom = item as Classrooms;
           await adminProvider.updateClassroom(classroom.id, formData);
           break;
         case 'Phòng học':
-          final room = item as Room;
+          final room = item as Rooms;
           await adminProvider.updateRoom(room.id, formData);
           break;
       }
@@ -968,19 +968,19 @@ class _CRUDScreenState extends State<CRUDScreen> {
       
       switch (widget.type) {
         case 'Giảng viên':
-          final teacher = item as Teacher;
-          await adminProvider.deleteTeacher(teacher.id);
+          final teacher = item as Users;
+          await adminProvider.deleteUser(teacher.id);
           break;
         case 'Môn học':
-          final subject = item as Subject;
+          final subject = item as Subjects;
           await adminProvider.deleteSubject(subject.id);
           break;
         case 'Lớp học':
-          final classroom = item as Classroom;
+          final classroom = item as Classrooms;
           await adminProvider.deleteClassroom(classroom.id);
           break;
         case 'Phòng học':
-          final room = item as Room;
+          final room = item as Rooms;
           await adminProvider.deleteRoom(room.id);
           break;
       }

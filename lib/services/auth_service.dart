@@ -1,26 +1,14 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user.dart';
+import '../models/users.dart';
 import 'firebase_service.dart';
 
 class AuthService {
   static final firebase.FirebaseAuth _auth = firebase.FirebaseAuth.instance;
   static final FirebaseFirestore _firestore = FirebaseService.firestore;
 
-  // Kiểm tra kết nối mạng - không cần quyền Firestore
-  static Future<bool> _checkNetworkConnection() async {
-    try {
-      // Chỉ kiểm tra Firebase Auth connection, không cần đọc Firestore
-      await _auth.authStateChanges().first.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw Exception('Connection timeout'),
-      );
-      return true;
-    } catch (e) {
-      print('❌ AuthService: Network check failed: $e');
-      return false;
-    }
-  }
+  // Loại bỏ pre-check mạng dễ gây timeout; dựa vào lỗi Firebase để xác định trạng thái mạng
 
   static Future<Map<String, dynamic>> signInWithEmailAndPassword({
     required String email,
@@ -28,17 +16,12 @@ class AuthService {
   }) async {
     try {
       print('🔐 AuthService: Bắt đầu đăng nhập với email: $email');
-      
-      // Kiểm tra kết nối mạng trước
-      if (!await _checkNetworkConnection()) {
-        return {'success': false, 'message': 'Không có kết nối mạng. Vui lòng kiểm tra internet và thử lại.'};
-      }
-      
+
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       ).timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 60),
         onTimeout: () {
           throw Exception('Timeout: Không thể kết nối đến server. Vui lòng thử lại.');
         },
@@ -49,7 +32,7 @@ class AuthService {
 
       // Ưu tiên lấy theo UID; nếu không có, fallback tìm theo email
       print('🔍 AuthService: Tìm kiếm user data trong Firestore với UID: $uid');
-      final userModel = await getUserDataFromFirestore(uid, fallbackEmail: email);
+      final userModel = await getUsersDataFromFirestore(uid, fallbackEmail: email);
 
       if (userModel == null) {
         print('❌ AuthService: Không tìm thấy user data trong Firestore');
@@ -62,6 +45,10 @@ class AuthService {
       print('✅ AuthService: Tìm thấy user data: ${userModel.fullName} (${userModel.role})');
       return {'success': true, 'userData': userModel};
       
+    } on TimeoutException catch (e) {
+      // Bắt riêng TimeoutException để thông báo rõ ràng hơn
+      print('❌ AuthService: TimeoutException: $e');
+      return {'success': false, 'message': 'Kết nối chậm. Vui lòng kiểm tra mạng và thử lại.'};
     } on firebase.FirebaseAuthException catch (e) {
       print('❌ AuthService: FirebaseAuthException - Code: ${e.code}, Message: ${e.message}');
       
@@ -101,16 +88,16 @@ class AuthService {
     }
   }
 
-  static Future<User?> getUserDataFromFirestore(String uid, {String? fallbackEmail}) async {
+  static Future<Users?> getUsersDataFromFirestore(String uid, {String? fallbackEmail}) async {
     try {
-      print('🔍 AuthService: getUserDataFromFirestore - UID: $uid, FallbackEmail: $fallbackEmail');
+      print('🔍 AuthService: getUsersDataFromFirestore - UID: $uid, FallbackEmail: $fallbackEmail');
       
       final doc = await _firestore.collection('users').doc(uid).get();
       print('📄 AuthService: Document exists: ${doc.exists}');
       
       if (doc.exists) {
         print('✅ AuthService: Tìm thấy user theo UID');
-        return User.fromJson(doc.id, doc.data()!);
+        return Users.fromJson(doc.id, doc.data()!);
       }
       
       if (fallbackEmail != null) {
@@ -126,14 +113,14 @@ class AuthService {
         if (q.docs.isNotEmpty) {
           final d = q.docs.first;
           print('✅ AuthService: Tìm thấy user theo email');
-          return User.fromJson(d.id, d.data());
+          return Users.fromJson(d.id, d.data());
         }
       }
       
       print('❌ AuthService: Không tìm thấy user data');
       return null;
     } catch (e) {
-      print('❌ AuthService: Error in getUserDataFromFirestore: $e');
+      print('❌ AuthService: Error in getUsersDataFromFirestore: $e');
       return null;
     }
   }
@@ -166,28 +153,28 @@ class AuthService {
       
       // Kiểm tra Firebase Auth users trước
       print('🔐 AuthService: Kiểm tra Firebase Auth users...');
-      final currentUser = _auth.currentUser;
-      print('👤 AuthService: Current Firebase Auth user: ${currentUser?.email} (${currentUser?.uid})');
+      final currentUsers = _auth.currentUser;
+      print('👤 AuthService: Current Firebase Auth user: ${currentUsers?.email} (${currentUsers?.uid})');
       
-      if (currentUser != null) {
+      if (currentUsers != null) {
         // Chỉ kiểm tra user document của chính mình
-        final userDoc = await _firestore.collection('users').doc(currentUser.uid).get();
+        final userDoc = await _firestore.collection('users').doc(currentUsers.uid).get();
         if (userDoc.exists) {
           print('✅ AuthService: Tìm thấy user data trong Firestore: ${userDoc.data()}');
         } else {
-          print('❌ AuthService: Không tìm thấy user data trong Firestore cho UID: ${currentUser.uid}');
+          print('❌ AuthService: Không tìm thấy user data trong Firestore cho UID: ${currentUsers.uid}');
           
           // Thử tìm theo email nếu không tìm thấy theo UID
           final emailQuery = await _firestore
               .collection('users')
-              .where('email', isEqualTo: currentUser.email)
+              .where('email', isEqualTo: currentUsers.email)
               .limit(1)
               .get();
           
           if (emailQuery.docs.isNotEmpty) {
             print('✅ AuthService: Tìm thấy user theo email: ${emailQuery.docs.first.data()}');
           } else {
-            print('❌ AuthService: Không tìm thấy user theo email: ${currentUser.email}');
+            print('❌ AuthService: Không tìm thấy user theo email: ${currentUsers.email}');
           }
         }
       } else {

@@ -24,7 +24,13 @@ void main() async {
           create: (context) => AdminProvider(),
         ),
       ],
-      child: const MyApp(),
+      child: MaterialApp(
+        title: 'TLU Schedule Management',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: const MyApp(),
+      ),
     ),
   );
 }

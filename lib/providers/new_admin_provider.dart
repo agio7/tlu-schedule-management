@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/admin_service.dart';
 import '../services/user_service.dart';
 import '../services/subject_service.dart';
@@ -29,7 +28,6 @@ class AdminProvider with ChangeNotifier {
   // Getters
   Map<String, int> get dashboardStats => _dashboardStats;
   List<Users> get users => _users;
-  List<Users> get teachers => _users.where((user) => user.role == 'teacher').toList();
   List<Subjects> get subjects => _subjects;
   List<Classrooms> get classrooms => _classrooms;
   List<Rooms> get rooms => _rooms;
@@ -92,8 +90,8 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  // Load users (all roles)
-  Future<void> loadUsers() async {
+  // Load teachers
+  Future<void> loadTeachers() async {
     await loadUsersByRole('teacher');
   }
 
@@ -213,59 +211,6 @@ class AdminProvider with ChangeNotifier {
     return _leaveRequests.where((request) => 
       request.status.toString().contains(status)
     ).toList();
-  }
-
-  // Load pending leave requests
-  Future<void> loadPendingLeaveRequests() async {
-    await loadLeaveRequests();
-  }
-
-  // Update leave request status
-  Future<void> updateLeaveRequestStatus(String leaveRequestId, String status, [String? notes]) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      if (status == 'approved') {
-        await AdminService.approveLeaveRequest(leaveRequestId, 'admin');
-        // Update with notes if provided
-        if (notes != null) {
-          // Get current leave request first
-          final currentRequest = await LeaveRequestService.getLeaveRequestById(leaveRequestId);
-          if (currentRequest != null) {
-            final updatedRequest = currentRequest.copyWith(
-              approverNotes: notes,
-              approvedDate: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-            await LeaveRequestService.updateLeaveRequest(leaveRequestId, updatedRequest);
-          }
-        }
-      } else if (status == 'rejected') {
-        await AdminService.rejectLeaveRequest(leaveRequestId, 'admin');
-        // Update with notes if provided
-        if (notes != null) {
-          // Get current leave request first
-          final currentRequest = await LeaveRequestService.getLeaveRequestById(leaveRequestId);
-          if (currentRequest != null) {
-            final updatedRequest = currentRequest.copyWith(
-              approverNotes: notes,
-              updatedAt: DateTime.now(),
-            );
-            await LeaveRequestService.updateLeaveRequest(leaveRequestId, updatedRequest);
-          }
-        }
-      }
-      
-      await loadLeaveRequests();
-      
-      print('✅ AdminProvider: Updated leave request status to $status successfully');
-    } catch (e) {
-      _setError('Không thể cập nhật trạng thái yêu cầu: $e');
-      print('❌ Error updating leave request status: $e');
-    } finally {
-      _setLoading(false);
-    }
   }
 
   // Add user
@@ -415,194 +360,6 @@ class AdminProvider with ChangeNotifier {
     } catch (e) {
       _setError('Không thể từ chối yêu cầu: $e');
       print('❌ Error rejecting leave request: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Update user
-  Future<void> updateUser(String userId, Map<String, dynamic> userData) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      final user = Users(
-        id: userId,
-        email: userData['email'] ?? '',
-        fullName: userData['fullName'] ?? '',
-        role: userData['role'] ?? 'teacher',
-        departmentId: userData['departmentId'],
-        employeeId: userData['employeeId'],
-        academicRank: userData['academicRank'],
-        avatar: userData['avatar'],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      await UserService.updateUser(userId, user);
-      await loadUsersByRole(user.role);
-      
-      print('✅ AdminProvider: Updated user successfully');
-    } catch (e) {
-      _setError('Không thể cập nhật người dùng: $e');
-      print('❌ Error updating user: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Update subject
-  Future<void> updateSubject(String subjectId, Map<String, dynamic> subjectData) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      final subject = Subjects(
-        id: subjectId,
-        name: subjectData['name'] ?? '',
-        code: subjectData['code'] ?? '',
-        departmentId: subjectData['departmentId'] ?? '',
-        credits: subjectData['credits'] ?? 0,
-        totalHours: subjectData['totalHours'] ?? 0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      await SubjectService.updateSubject(subjectId, subject);
-      await loadSubjects();
-      
-      print('✅ AdminProvider: Updated subject successfully');
-    } catch (e) {
-      _setError('Không thể cập nhật môn học: $e');
-      print('❌ Error updating subject: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Update classroom
-  Future<void> updateClassroom(String classroomId, Map<String, dynamic> classroomData) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      final classroom = Classrooms(
-        id: classroomId,
-        name: classroomData['name'] ?? '',
-        code: classroomData['code'] ?? '',
-        departmentId: classroomData['departmentId'] ?? '',
-        academicYear: classroomData['academicYear'] ?? '',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      await ClassroomService.updateClassroom(classroomId, classroom);
-      await loadClassrooms();
-      
-      print('✅ AdminProvider: Updated classroom successfully');
-    } catch (e) {
-      _setError('Không thể cập nhật lớp học: $e');
-      print('❌ Error updating classroom: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Update room
-  Future<void> updateRoom(String roomId, Map<String, dynamic> roomData) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      final room = Rooms(
-        id: roomId,
-        name: roomData['name'] ?? '',
-        code: roomData['code'] ?? '',
-        building: roomData['building'],
-        capacity: roomData['capacity'] ?? 0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      await RoomService.updateRoom(roomId, room);
-      await loadRooms();
-      
-      print('✅ AdminProvider: Updated room successfully');
-    } catch (e) {
-      _setError('Không thể cập nhật phòng học: $e');
-      print('❌ Error updating room: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Delete user
-  Future<void> deleteUser(String userId) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      await UserService.deleteUser(userId);
-      await loadUsers();
-      
-      print('✅ AdminProvider: Deleted user successfully');
-    } catch (e) {
-      _setError('Không thể xóa người dùng: $e');
-      print('❌ Error deleting user: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Delete subject
-  Future<void> deleteSubject(String subjectId) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      await SubjectService.deleteSubject(subjectId);
-      await loadSubjects();
-      
-      print('✅ AdminProvider: Deleted subject successfully');
-    } catch (e) {
-      _setError('Không thể xóa môn học: $e');
-      print('❌ Error deleting subject: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Delete classroom
-  Future<void> deleteClassroom(String classroomId) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      await ClassroomService.deleteClassroom(classroomId);
-      await loadClassrooms();
-      
-      print('✅ AdminProvider: Deleted classroom successfully');
-    } catch (e) {
-      _setError('Không thể xóa lớp học: $e');
-      print('❌ Error deleting classroom: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Delete room
-  Future<void> deleteRoom(String roomId) async {
-    try {
-      _setLoading(true);
-      _clearError();
-      
-      await RoomService.deleteRoom(roomId);
-      await loadRooms();
-      
-      print('✅ AdminProvider: Deleted room successfully');
-    } catch (e) {
-      _setError('Không thể xóa phòng học: $e');
-      print('❌ Error deleting room: $e');
     } finally {
       _setLoading(false);
     }

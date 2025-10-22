@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/admin_provider.dart';
-import '../../../models/leave_request.dart';
+import '../../../models/leave_requests.dart';
 
 class ApprovalsScreen extends StatefulWidget {
   const ApprovalsScreen({super.key});
@@ -197,7 +197,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildRequestCardFromData(LeaveRequest request, BuildContext context, String status) {
+  Widget _buildRequestCardFromData(LeaveRequests request, BuildContext context, String status) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
