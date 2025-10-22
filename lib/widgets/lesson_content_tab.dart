@@ -16,17 +16,74 @@ class LessonContentTab extends StatefulWidget {
 }
 
 class _LessonContentTabState extends State<LessonContentTab> {
+  final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
+    _titleController.text = widget.lesson.sessionTitle;
     _contentController.text = widget.lesson.content ?? '';
+  }
+
+  void _saveContent() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập tiêu đề buổi học'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập nội dung bài học'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Lưu tiêu đề và nội dung
+      await context.read<LessonProvider>().updateLessonContent(
+        widget.lesson.id,
+        _contentController.text.trim(),
+      );
+      
+      // TODO: Thêm method để cập nhật sessionTitle trong LessonProvider
+      // await context.read<LessonProvider>().updateLessonTitle(
+      //   widget.lesson.id,
+      //   _titleController.text.trim(),
+      // );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã lưu nội dung bài học'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi lưu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
@@ -35,9 +92,10 @@ class _LessonContentTabState extends State<LessonContentTab> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Session Info
           Container(
             width: double.infinity,
@@ -108,6 +166,55 @@ class _LessonContentTabState extends State<LessonContentTab> {
 
           const SizedBox(height: 20),
 
+          // Lesson Title Section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tiêu đề buổi học',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _titleController,
+                  enabled: widget.lesson.status == 'upcoming',
+                  decoration: InputDecoration(
+                    hintText: widget.lesson.status == 'upcoming' 
+                        ? 'Nhập tiêu đề buổi học' 
+                        : 'Lớp đã diễn ra - không thể chỉnh sửa',
+                    border: const OutlineInputBorder(),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF6B46C1)),
+                    ),
+                    disabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
           // Content Section
           Container(
             width: double.infinity,
@@ -137,7 +244,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                         color: Color(0xFF111827),
                       ),
                     ),
-                    if (!_isEditing)
+                    if (!_isEditing && widget.lesson.status == 'upcoming')
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
@@ -155,7 +262,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
 
                 const SizedBox(height: 12),
 
-                if (_isEditing) ...[
+                if (_isEditing && widget.lesson.status == 'upcoming') ...[
                   TextField(
                     controller: _contentController,
                     maxLines: 8,
@@ -210,16 +317,24 @@ class _LessonContentTabState extends State<LessonContentTab> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: widget.lesson.status == 'upcoming' 
+                          ? Colors.grey[50] 
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: widget.lesson.status == 'upcoming' 
+                            ? Colors.grey[300]! 
+                            : Colors.grey[400]!,
+                      ),
                     ),
                     child: Text(
                       widget.lesson.content ?? 'Chưa có nội dung buổi học',
                       style: TextStyle(
                         fontSize: 14,
                         color: widget.lesson.content != null
-                            ? const Color(0xFF374151)
+                            ? (widget.lesson.status == 'upcoming' 
+                                ? const Color(0xFF374151) 
+                                : Colors.grey[600])
                             : Colors.grey[600],
                       ),
                     ),
@@ -232,42 +347,26 @@ class _LessonContentTabState extends State<LessonContentTab> {
           const SizedBox(height: 20),
 
           // Action Buttons
-          if (!_isEditing) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Navigate to attendance
-                    },
-                    icon: const Icon(Icons.people),
-                    label: const Text('Điểm danh'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B46C1),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+          if (!_isEditing && widget.lesson.status == 'upcoming') ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _saveContent,
+                icon: const Icon(Icons.save),
+                label: const Text('Lưu nội dung'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6B46C1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // Navigate to leave registration
-                    },
-                    icon: const Icon(Icons.event_busy),
-                    label: const Text('Đăng ký nghỉ'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF6B46C1),
-                      side: const BorderSide(color: Color(0xFF6B46C1)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ],
+        ),
       ),
     );
   }

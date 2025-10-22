@@ -35,9 +35,10 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Registration Form
           Container(
             width: double.infinity,
@@ -121,11 +122,16 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedReason.isEmpty ? null : _selectedReason,
-                  decoration: const InputDecoration(
-                    hintText: 'Chọn lý do',
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
+                  decoration: InputDecoration(
+                    hintText: widget.lesson.status == 'upcoming' || widget.lesson.status == 'ongoing'
+                        ? 'Chọn lý do'
+                        : 'Lớp đã kết thúc - không thể đăng ký',
+                    border: const OutlineInputBorder(),
+                    focusedBorder: const OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFF6B46C1)),
+                    ),
+                    disabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
                     ),
                   ),
                   items: _reasons.map((reason) {
@@ -134,11 +140,13 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                       child: Text(reason),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedReason = value ?? '';
-                    });
-                  },
+                  onChanged: (widget.lesson.status == 'upcoming' || widget.lesson.status == 'ongoing')
+                      ? (value) {
+                          setState(() {
+                            _selectedReason = value ?? '';
+                          });
+                        }
+                      : null,
                 ),
 
                 // Makeup Date (only for makeup registration)
@@ -280,11 +288,11 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _selectedReason.isEmpty
-                        ? null
-                        : () {
-                      _submitRegistration();
-                    },
+                    onPressed: (widget.lesson.status == 'upcoming' || widget.lesson.status == 'ongoing') && _selectedReason.isNotEmpty
+                        ? () {
+                            _submitRegistration();
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6B46C1),
                       foregroundColor: Colors.white,
@@ -306,6 +314,7 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/lesson_provider.dart';
 import '../../widgets/bottom_navigation.dart';
 
@@ -95,68 +96,74 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   )
                 else
                   ...lessons.map((lesson) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  lesson.subject,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                    return GestureDetector(
+                      onTap: () {
+                        // Navigate to lesson attendance screen
+                        context.go('/lesson-attendance/${lesson.id}');
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    lesson.subject,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: lesson.isCompleted ? Colors.green : Colors.orange,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  lesson.isCompleted ? 'Đã học' : 'Sắp tới',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: lesson.isCompleted ? Colors.green : Colors.orange,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    lesson.isCompleted ? 'Đã học' : 'Sắp tới',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${lesson.className} - ${lesson.room}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${lesson.className} - ${lesson.room}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${lesson.startTime} - ${lesson.endTime}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
+                            const SizedBox(height: 4),
+                            Text(
+                              '${lesson.startTime} - ${lesson.endTime}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
@@ -165,7 +172,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           );
         },
       ),
-      bottomNavigationBar: const BottomNavigation(currentIndex: 2),
+      bottomNavigationBar: const BottomNavigation(currentIndex: 3),
     );
   }
 }
+

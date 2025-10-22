@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'screens/teacher/dashboard_screen.dart';
 import 'screens/teacher/calendar_screen.dart';
 import 'screens/teacher/lesson_detail_screen.dart';
+import 'screens/teacher/lesson_attendance_screen.dart';
 import 'screens/teacher/attendance_screen.dart';
 import 'screens/teacher/leave_registration_screen.dart';
 import 'screens/teacher/reports_screen.dart';
@@ -123,6 +124,13 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/calendar',
       builder: (context, state) => const CalendarScreen(),
+    ),
+    GoRoute(
+      path: '/lesson-attendance/:lessonId',
+      builder: (context, state) {
+        final lessonId = state.pathParameters['lessonId']!;
+        return LessonAttendanceScreen(lessonId: lessonId);
+      },
     ),
     GoRoute(
       path: '/lesson-detail/:lessonId',

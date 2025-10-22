@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/lesson_provider.dart';
 import '../../models/lesson.dart';
+import '../../widgets/lesson_content_tab.dart';
+import '../../widgets/attendance_tab.dart';
+import '../../widgets/leave_registration_tab.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final String lessonId;
@@ -16,24 +19,19 @@ class LessonDetailScreen extends StatefulWidget {
   State<LessonDetailScreen> createState() => _LessonDetailScreenState();
 }
 
-class _LessonDetailScreenState extends State<LessonDetailScreen> {
-  final TextEditingController _contentController = TextEditingController();
-  final List<String> _attendanceList = [];
+class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _loadLessonData();
+    _tabController = TabController(length: 3, vsync: this);
   }
 
-  void _loadLessonData() {
-    final lessonProvider = context.read<LessonProvider>();
-    final lesson = lessonProvider.getLessonById(widget.lessonId);
-    
-    if (lesson != null) {
-      _contentController.text = lesson.content ?? '';
-      _attendanceList.addAll(lesson.attendanceList);
-    }
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,13 +43,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         foregroundColor: Colors.white,
         title: const Text('Chi tiết buổi học'),
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _saveLesson,
-            icon: const Icon(Icons.save),
-            tooltip: 'Lưu thay đổi',
-          ),
-        ],
+        leading: IconButton(
+          onPressed: () => context.go('/dashboard'),
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
       body: Consumer<LessonProvider>(
         builder: (context, lessonProvider, child) {
@@ -80,268 +75,134 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             );
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Lesson Info Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lesson.subject,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${lesson.className} - ${lesson.room}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${lesson.startTime} - ${lesson.endTime}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: lesson.isCompleted ? Colors.green : Colors.orange,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          lesson.isCompleted ? 'Đã hoàn thành' : 'Sắp tới',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Content Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Nội dung buổi học',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _contentController,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          hintText: 'Nhập nội dung buổi học...',
-                          border: OutlineInputBorder(),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF6B46C1)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Attendance Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Danh sách điểm danh',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_attendanceList.isEmpty)
-                        const Text(
-                          'Chưa có sinh viên nào điểm danh',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        )
-                      else
-                        ..._attendanceList.map((studentId) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.person,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  studentId,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: lesson.isCompleted ? null : _markCompleted,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6B46C1),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Đánh dấu hoàn thành'),
-                      ),
+          return Column(
+            children: [
+              // Lesson Info Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _saveLesson,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF6B46C1),
-                          side: const BorderSide(color: Color(0xFF6B46C1)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${lesson.startTime} - ${lesson.endTime}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
                           ),
                         ),
-                        child: const Text('Lưu thay đổi'),
+                        const SizedBox(width: 20),
+                        Icon(
+                          Icons.calendar_today,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${lesson.date.day}/${lesson.date.month}/${lesson.date.year}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.school,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          lesson.className,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          lesson.room,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      lesson.subject,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              
+              // Tab Bar
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: const Color(0xFF6B46C1),
+                  labelColor: const Color(0xFF6B46C1),
+                  unselectedLabelColor: Colors.grey[600],
+                  tabs: const [
+                    Tab(text: 'Nội dung'),
+                    Tab(text: 'Điểm danh'),
+                    Tab(text: 'Nghỉ/Bù'),
+                  ],
+                ),
+              ),
+              
+              // Tab Content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    LessonContentTab(lesson: lesson),
+                    AttendanceTab(lesson: lesson),
+                    LeaveRegistrationTab(lesson: lesson),
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  void _saveLesson() async {
-    final lessonProvider = context.read<LessonProvider>();
-    
-    // Save content
-    if (_contentController.text.isNotEmpty) {
-      await lessonProvider.updateLessonContent(widget.lessonId, _contentController.text);
-    }
-    
-    // Save attendance
-    if (_attendanceList.isNotEmpty) {
-      await lessonProvider.updateAttendance(widget.lessonId, _attendanceList);
-    }
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã lưu thay đổi'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  void _markCompleted() async {
-    final lessonProvider = context.read<LessonProvider>();
-    await lessonProvider.markLessonCompleted(widget.lessonId);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã đánh dấu hoàn thành'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _contentController.dispose();
-    super.dispose();
-  }
 }
+
