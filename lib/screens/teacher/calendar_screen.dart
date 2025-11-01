@@ -84,30 +84,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         foregroundColor: Colors.white,
         title: const Text('Lịch Giảng Dạy'),
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
-              final authProvider = context.read<AuthProvider>();
-              final lessonProvider = context.read<LessonProvider>();
-              
-              if (authProvider.userData?.id != null) {
-                lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
-              } else {
-                lessonProvider.loadLessons();
-              }
-            },
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Làm mới dữ liệu',
-          ),
-          IconButton(
-            onPressed: () {
-              final lessonProvider = context.read<LessonProvider>();
-              lessonProvider.loadLessons();
-            },
-            icon: const Icon(Icons.bug_report),
-            tooltip: 'Debug: Load tất cả lessons',
-          ),
-        ],
       ),
       body: Consumer<LessonProvider>(
         builder: (context, lessonProvider, child) {
@@ -167,7 +143,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           }
 
           // Filter by status
-          if (_selectedFilter == 'Đã học') {
+          if (_selectedFilter == 'Đã dạy') {
             filteredLessons = filteredLessons.where((l) => l.isCompleted).toList();
           } else if (_selectedFilter == 'Sắp tới') {
             filteredLessons = filteredLessons.where((l) => !l.isCompleted).toList();
@@ -286,7 +262,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Row(
                   children: [
                     _buildFilterTab('Tất cả', filteredLessons.length),
-                    _buildFilterTab('Đã học', filteredLessons.where((l) => l.isCompleted).length),
+                    _buildFilterTab('Đã dạy', filteredLessons.where((l) => l.isCompleted).length),
                     _buildFilterTab('Sắp tới', filteredLessons.where((l) => !l.isCompleted).length),
                   ],
                 ),
@@ -332,7 +308,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ),
                             SizedBox(height: 16),
                             Text(
-                              'Không có buổi học nào',
+                              'Không có lớp học nào',
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 16,

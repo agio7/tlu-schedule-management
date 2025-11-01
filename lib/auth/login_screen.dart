@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../screens/teacher/dashboard_screen.dart';
+import '../providers/lesson_provider.dart';
+import '../screens/teacher/teacher_dashboard.dart';
 import '../screens/admin/admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -45,6 +46,15 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         if (success) {
+          // Load dữ liệu ngay sau khi đăng nhập
+          final lessonProvider = Provider.of<LessonProvider>(context, listen: false);
+          if (authProvider.userData?.id != null) {
+            // Setup streams và load dữ liệu
+            lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+          } else {
+            lessonProvider.setupAllRealtimeStreams();
+          }
+          
           // Sử dụng GoRouter để điều hướng
           context.go('/dashboard');
         } else {
@@ -280,20 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Import AdminDashboard để tránh lỗi
-class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Admin Dashboard - Import từ admin_dashboard.dart'),
       ),
     );
   }

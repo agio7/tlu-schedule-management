@@ -5,7 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-import 'screens/teacher/dashboard_screen.dart';
+import 'screens/teacher/teacher_dashboard.dart';
 import 'screens/teacher/calendar_screen.dart';
 import 'screens/teacher/lesson_detail_screen.dart';
 import 'screens/teacher/lesson_attendance_screen.dart';
@@ -119,7 +119,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
+      builder: (context, state) => const TeacherDashboard(),
     ),
     GoRoute(
       path: '/calendar',

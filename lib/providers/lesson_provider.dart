@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/lesson.dart';
 import '../models/leave_request.dart';
@@ -10,6 +11,11 @@ class LessonProvider with ChangeNotifier {
   List<LeaveRequest> _leaveRequests = [];
   bool _isLoading = false;
   String? _error;
+  
+  // Stream subscriptions để có thể cancel
+  StreamSubscription<List<Lesson>>? _lessonsSubscription;
+  StreamSubscription<List<LeaveRequest>>? _leaveRequestsSubscription;
+  bool _streamsInitialized = false;
 
   List<Lesson> get lessons => _lessons;
   List<LeaveRequest> get leaveRequests => _leaveRequests;
@@ -211,32 +217,115 @@ class LessonProvider with ChangeNotifier {
 
   // Setup real-time streams
   void setupRealtimeStreams(String teacherId) {
+    // Chỉ setup một lần
+    if (_streamsInitialized) {
+      return;
+    }
+    
+    // Cancel existing subscriptions nếu có
+    _lessonsSubscription?.cancel();
+    _leaveRequestsSubscription?.cancel();
+    
+    // Initial load ngay lập tức để có dữ liệu sẵn
+    loadLessonsByTeacher(teacherId);
+    loadLeaveRequestsByTeacher(teacherId);
+    
     // Listen to lessons changes
-    RealtimeService.getLessonsStreamByTeacher(teacherId).listen((lessons) {
-      _lessons = lessons;
-      notifyListeners();
-    });
+    _lessonsSubscription = RealtimeService.getLessonsStreamByTeacher(teacherId).listen(
+      (lessons) {
+        _lessons = lessons;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Error in lessons stream: $error');
+        _error = 'Lỗi khi tải dữ liệu buổi học: $error';
+        // Load fallback data
+        loadLessonsByTeacher(teacherId);
+        notifyListeners();
+      },
+    );
 
     // Listen to leave requests changes
-    RealtimeService.getLeaveRequestsStreamByTeacher(teacherId).listen((leaveRequests) {
-      _leaveRequests = leaveRequests;
-      notifyListeners();
-    });
+    _leaveRequestsSubscription = RealtimeService.getLeaveRequestsStreamByTeacher(teacherId).listen(
+      (leaveRequests) {
+        _leaveRequests = leaveRequests;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Error in leave requests stream: $error');
+        _error = 'Lỗi khi tải dữ liệu nghỉ dạy: $error';
+        // Load fallback data
+        loadLeaveRequestsByTeacher(teacherId);
+        notifyListeners();
+      },
+    );
+    
+    _streamsInitialized = true;
   }
 
   // Setup real-time streams for all data (admin view)
   void setupAllRealtimeStreams() {
+    // Chỉ setup một lần
+    if (_streamsInitialized) {
+      return;
+    }
+    
+    // Cancel existing subscriptions nếu có
+    _lessonsSubscription?.cancel();
+    _leaveRequestsSubscription?.cancel();
+    
+    // Initial load ngay lập tức để có dữ liệu sẵn
+    loadLessons();
+    loadLeaveRequests();
+    
     // Listen to all lessons changes
-    RealtimeService.getAllLessonsStream().listen((lessons) {
-      _lessons = lessons;
-      notifyListeners();
-    });
+    _lessonsSubscription = RealtimeService.getAllLessonsStream().listen(
+      (lessons) {
+        _lessons = lessons;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Error in all lessons stream: $error');
+        _error = 'Lỗi khi tải dữ liệu buổi học: $error';
+        // Load fallback data
+        loadLessons();
+        notifyListeners();
+      },
+    );
 
     // Listen to all leave requests changes
-    RealtimeService.getAllLeaveRequestsStream().listen((leaveRequests) {
-      _leaveRequests = leaveRequests;
-      notifyListeners();
-    });
+    _leaveRequestsSubscription = RealtimeService.getAllLeaveRequestsStream().listen(
+      (leaveRequests) {
+        _leaveRequests = leaveRequests;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Error in all leave requests stream: $error');
+        _error = 'Lỗi khi tải dữ liệu nghỉ dạy: $error';
+        // Load fallback data
+        loadLeaveRequests();
+        notifyListeners();
+      },
+    );
+    
+    _streamsInitialized = true;
+  }
+  
+  // Reset streams (để có thể reload)
+  void resetStreams() {
+    _lessonsSubscription?.cancel();
+    _leaveRequestsSubscription?.cancel();
+    _lessons = [];
+    _leaveRequests = [];
+    _streamsInitialized = false;
+    notifyListeners();
+  }
+  
+  @override
+  void dispose() {
+    _lessonsSubscription?.cancel();
+    _leaveRequestsSubscription?.cancel();
+    super.dispose();
   }
 }
 

@@ -6,6 +6,7 @@ import '../../models/lesson.dart';
 import '../../widgets/lesson_content_tab.dart';
 import '../../widgets/attendance_tab.dart';
 import '../../widgets/leave_registration_tab.dart';
+import '../../widgets/bottom_navigation.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final String lessonId;
@@ -201,6 +202,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
           );
         },
       ),
+      bottomNavigationBar: const BottomNavigation(currentIndex: 1),
     );
   }
 

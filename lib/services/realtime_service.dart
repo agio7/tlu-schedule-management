@@ -12,7 +12,6 @@ class RealtimeService {
     return _firestore
         .collection('lessons')
         .where('teacherId', isEqualTo: teacherId)
-        .orderBy('date')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -30,7 +29,6 @@ class RealtimeService {
         .collection('lessons')
         .where('date', isGreaterThanOrEqualTo: startOfDay)
         .where('date', isLessThanOrEqualTo: endOfDay)
-        .orderBy('startTime')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -44,7 +42,6 @@ class RealtimeService {
     return _firestore
         .collection('leaveRequests')
         .where('teacherId', isEqualTo: teacherId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -57,7 +54,6 @@ class RealtimeService {
   static Stream<List<Lesson>> getAllLessonsStream() {
     return _firestore
         .collection('lessons')
-        .orderBy('date')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -70,7 +66,6 @@ class RealtimeService {
   static Stream<List<LeaveRequest>> getAllLeaveRequestsStream() {
     return _firestore
         .collection('leaveRequests')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -79,4 +74,7 @@ class RealtimeService {
     });
   }
 }
+
+
+
 

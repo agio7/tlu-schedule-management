@@ -79,6 +79,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             child: Consumer<AuthProvider>(
                               builder: (context, authProvider, child) {
                                 final userName = authProvider.userData?.fullName ?? 'Giảng viên';
+                                final role = authProvider.userData?.role ?? 'teacher';
+                                final roleText = role == 'teacher' ? 'Giảng viên' : 'Quản trị viên';
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -90,9 +92,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    const Text(
-                                      'Giảng viên',
-                                      style: TextStyle(
+                                    Text(
+                                      roleText,
+                                      style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 14,
                                       ),
@@ -101,6 +103,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                 );
                               },
                             ),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.notifications, color: Colors.white),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              context.go('/seed-data');
+                            },
+                            icon: const Icon(Icons.data_usage, color: Colors.white),
                           ),
                           IconButton(
                             onPressed: () async {
@@ -227,7 +239,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
                       // Lessons List
                       Container(
-                        height: 300,
+                        height: 400,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.only(
