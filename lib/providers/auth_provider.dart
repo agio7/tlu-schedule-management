@@ -48,8 +48,6 @@ class AuthProvider with ChangeNotifier {
     clearError();
 
     print('AuthProvider: Bắt đầu đăng nhập cho $email...');
-
-    // Debug: Kiểm tra dữ liệu trong Firestore trước khi đăng nhập
     await AuthService.debugCheckFirestoreData();
 
     final result = await AuthService.signInWithRetry(

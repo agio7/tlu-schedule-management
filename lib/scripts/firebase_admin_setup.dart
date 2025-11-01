@@ -20,9 +20,9 @@ class FirebaseAdminSetup {
       // 3. Tạo dữ liệu mẫu
       await _createSampleData();
 
-      print('✅ Setup Firebase Admin hoàn tất!');
+      print(' Setup Firebase Admin hoàn tất!');
     } catch (e) {
-      print('❌ Lỗi setup Firebase Admin: $e');
+      print(' Lỗi setup Firebase Admin: $e');
     }
   }
 

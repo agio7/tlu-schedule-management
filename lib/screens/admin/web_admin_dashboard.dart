@@ -7,7 +7,7 @@ import 'schedule/schedule_management_screen.dart';
 import 'approvals/approvals_screen.dart';
 import 'management/management_screen.dart';
 import 'reports/reports_screen.dart';
-import '../firebase_reset_screen.dart';
+
 
 class WebAdminDashboard extends StatefulWidget {
   const WebAdminDashboard({super.key});
@@ -27,7 +27,6 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
     ApprovalsScreen(),
     ManagementScreen(),
     ReportsScreen(),
-    FirebaseResetScreen(),
   ];
 
   final List<String> _titles = const [
