@@ -1,0 +1,6 @@
+[
+  {"id":"att_001","scheduleId":"sched_001","studentId":"stu_001","studentName":"SV 1","status":"present","checkInTime":{"_seconds":0,"_nanoseconds":0},"notes":"","createdAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"att_002","scheduleId":"sched_001","studentId":"stu_002","studentName":"SV 2","status":"absent","checkInTime":null,"notes":"","createdAt":{"_seconds":0,"_nanoseconds":0}}
+]
+
+

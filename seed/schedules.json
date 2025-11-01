@@ -1,0 +1,7 @@
+[
+  {"id":"sched_001","subjectId":"subj_001","classroomId":"class_001","teacherId":"user_003","roomId":"room_001","startTime":{"_seconds":0,"_nanoseconds":0},"endTime":{"_seconds":0,"_nanoseconds":0},"weekNumber":1,"sessionNumber":1,"status":"scheduled","content":"Giới thiệu Flutter","notes":"Buổi đầu"},
+  {"id":"sched_002","subjectId":"subj_001","classroomId":"class_001","teacherId":"user_003","roomId":"room_002","startTime":{"_seconds":0,"_nanoseconds":0},"endTime":{"_seconds":0,"_nanoseconds":0},"weekNumber":1,"sessionNumber":2,"status":"scheduled","content":"Widgets & Layout","notes":""},
+  {"id":"sched_003","subjectId":"subj_002","classroomId":"class_002","teacherId":"user_004","roomId":"room_003","startTime":{"_seconds":0,"_nanoseconds":0},"endTime":{"_seconds":0,"_nanoseconds":0},"weekNumber":1,"sessionNumber":1,"status":"scheduled","content":"CSDL tổng quan","notes":""}
+]
+
+

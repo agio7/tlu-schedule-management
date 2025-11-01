@@ -1,5 +1,5 @@
 name: tlu_schedule_management
-description: "A new Flutter project."
+description: "Hệ thống quản lý lịch trình giảng dạy cho Trường Đại học Thủy lợi"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,14 +31,39 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # State Management
   provider: ^6.1.2
-  fl_chart: ^0.69.0
-  google_fonts: ^6.2.1
-  firebase_core: ^4.2.0
-  firebase_database: ^12.0.3
+
+  # HTTP & API
+  http: ^1.2.2
+  dio: ^5.4.3+1
+
+  # Local Storage
+  shared_preferences: ^2.2.3
+  sqflite: ^2.3.3+1
+
+  # UI Components
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.3.1
+
+  # Date & Time
+  intl: ^0.19.0
+  table_calendar: ^3.1.1 # Cũng nên nâng cấp gói này
+
+  # Firebase - ĐÃ CẬP NHẬT PHIÊN BẢN
+  firebase_core: ^2.31.0
+  cloud_firestore: ^4.17.3
+  firebase_auth: ^4.19.5
+  
+  # File handling
+  file_picker: ^8.0.0+1
+  
+  # Needed by department_head_simple_screen.dart
+  fl_chart: ^0.64.0
+  google_fonts: ^4.0.4
+  characters: ^1.3.0
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +88,15 @@ flutter:
   uses-material-design: true
   assets:
 #      - assets/images/
+      - seed/users.json
+      - seed/departments.json
+      - seed/subjects.json
+      - seed/classrooms.json
+      - seed/rooms.json
+      - seed/teachingAssignments.json
+      - seed/schedules.json
+      - seed/attendance.json
+      - seed/leaveRequests.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:
