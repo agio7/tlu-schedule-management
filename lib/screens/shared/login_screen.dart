@@ -158,36 +158,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             // Login Button
                             SizedBox(
-                              width: double.infinity,
-                              height: 50,
+                              width: double.infinity, // Chiều rộng toàn màn hình
+                              height: 50, // Chiều cao nút
                               child: ElevatedButton(
-                                // Nút sẽ bị vô hiệu hóa khi đang tải
-                                onPressed: auth.isLoading
-                                    ? null
-                                    : () => _handleLogin(auth),
+                                // Nếu đang tải => vô hiệu hóa nút
+                                // Nếu không => gọi hàm đăng nhập khi bấm
+                                onPressed: auth.isLoading ? null : () {
+                                  _handleLogin(auth); // Hàm xử lý đăng nhập
+                                },
+
+                                // Nội dung hiển thị bên trong nút
                                 child: auth.isLoading
-                                    ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                    : const Text('Đăng nhập',
-                                    style: TextStyle(fontSize: 16)),
+                                    ? const CircularProgressIndicator( // Hiện vòng quay nếu đang tải
+                                  color: Colors.white,
+                                )
+                                    : const Text( // Hiện chữ “Đăng nhập” nếu không tải
+                                  'Đăng nhập',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
+
+                            const SizedBox(height: 12), // Tạo khoảng cách giữa 2 nút
+
+                            // 🧱 Nút “Quên mật khẩu?”
                             Align(
-                              alignment: Alignment.centerRight,
+                              alignment: Alignment.centerRight, // Căn sang phải
                               child: TextButton(
-                                onPressed: auth.isLoading
-                                    ? null
-                                    : () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => const ForgotPasswordScreen(),
-                                          ),
-                                        );
-                                      },
+                                // Nếu đang tải => khóa nút
+                                // Nếu không => chuyển sang màn hình Quên mật khẩu
+                                onPressed: auth.isLoading ? null : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+
+                                // Nội dung hiển thị
                                 child: const Text('Quên mật khẩu?'),
                               ),
                             ),
+
                           ],
                         ),
                       ),
