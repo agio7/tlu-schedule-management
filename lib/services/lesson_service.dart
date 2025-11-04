@@ -21,15 +21,41 @@ class LessonService {
   // Lấy lessons theo teacher ID
   static Future<List<Lesson>> getLessonsByTeacher(String teacherId) async {
     try {
-      final QuerySnapshot snapshot = await _firestore
+      print('🔍 Querying Firebase for lessons where teacherId = "$teacherId"');
+      
+      // Query với teacherId chính xác
+      var snapshot = await _firestore
           .collection('lessons')
           .where('teacherId', isEqualTo: teacherId)
           .get();
-      return snapshot.docs.map((doc) {
-        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      
+      print('📊 Found ${snapshot.docs.length} lessons with teacherId = "$teacherId"');
+      
+      // Nếu không tìm thấy, thử query tất cả để xem có dữ liệu gì không (debug)
+      if (snapshot.docs.isEmpty) {
+        print('⚠️ No lessons found with teacherId = "$teacherId"');
+        print('🔍 Checking all lessons in Firebase...');
+        final allLessons = await _firestore.collection('lessons').limit(5).get();
+        if (allLessons.docs.isNotEmpty) {
+          print('📋 Sample teacherIds in Firebase:');
+          for (var doc in allLessons.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            print('   - teacherId: "${data['teacherId']}" (subject: ${data['subject']})');
+          }
+        } else {
+          print('   - No lessons found in Firebase at all');
+        }
+      }
+      
+      final lessons = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        print('📝 Lesson: ${data['subject']} - ${data['date']}');
+        return Lesson.fromMap(data, doc.id);
       }).toList();
+      
+      return lessons;
     } catch (e) {
-      print('Error getting lessons by teacher: $e');
+      print('❌ Error getting lessons by teacher: $e');
       return [];
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/lesson_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/bottom_navigation.dart';
 
 class AttendanceScreen extends StatefulWidget {
@@ -12,6 +13,49 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Setup và load dữ liệu khi màn hình được mở
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final lessonProvider = context.read<LessonProvider>();
+      
+      // Kiểm tra nếu chưa có dữ liệu, force load
+      final hasData = lessonProvider.lessons.isNotEmpty;
+      
+      if (authProvider.userData?.id != null) {
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id, force: true);
+        } else {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        }
+        
+        // Fallback: Load data directly if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
+          }
+        });
+      } else {
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupAllRealtimeStreams(force: true);
+        } else {
+          lessonProvider.setupAllRealtimeStreams();
+        }
+        
+        // Fallback: Load all data if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessons();
+          }
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

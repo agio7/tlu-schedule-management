@@ -74,6 +74,7 @@ class AuthProvider with ChangeNotifier {
     _userData = null;
     _isAuthenticated = false;
     _setLoading(false);
+    notifyListeners();
   }
 }
 

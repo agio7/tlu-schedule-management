@@ -9,15 +9,38 @@ class RealtimeService {
 
   // Stream lessons theo teacher ID với real-time updates
   static Stream<List<Lesson>> getLessonsStreamByTeacher(String teacherId) {
-    return _firestore
-        .collection('lessons')
-        .where('teacherId', isEqualTo: teacherId)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-    });
+    try {
+      return _firestore
+          .collection('lessons')
+          .where('teacherId', isEqualTo: teacherId)
+          .orderBy('date')
+          .orderBy('startTime')
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
+      });
+    } catch (e) {
+      print('Error in getLessonsStreamByTeacher with orderBy: $e');
+      // Fallback: return stream without orderBy if index is missing
+      return _firestore
+          .collection('lessons')
+          .where('teacherId', isEqualTo: teacherId)
+          .snapshots()
+          .map((snapshot) {
+        final lessons = snapshot.docs.map((doc) {
+          return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
+        // Sort manually if orderBy fails
+        lessons.sort((a, b) {
+          final dateCompare = a.date.compareTo(b.date);
+          if (dateCompare != 0) return dateCompare;
+          return a.startTime.compareTo(b.startTime);
+        });
+        return lessons;
+      });
+    }
   }
 
   // Stream lessons theo ngày với real-time updates
@@ -39,15 +62,30 @@ class RealtimeService {
 
   // Stream leave requests theo teacher ID với real-time updates
   static Stream<List<LeaveRequest>> getLeaveRequestsStreamByTeacher(String teacherId) {
-    return _firestore
-        .collection('leaveRequests')
-        .where('teacherId', isEqualTo: teacherId)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-    });
+    try {
+      return _firestore
+          .collection('leaveRequests')
+          .where('teacherId', isEqualTo: teacherId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
+      });
+    } catch (e) {
+      print('Error in getLeaveRequestsStreamByTeacher: $e');
+      // Fallback: return empty stream if orderBy fails (might need index)
+      return _firestore
+          .collection('leaveRequests')
+          .where('teacherId', isEqualTo: teacherId)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
+      });
+    }
   }
 
   // Stream tất cả lessons với real-time updates

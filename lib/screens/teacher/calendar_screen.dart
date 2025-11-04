@@ -29,29 +29,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final lessonProvider = context.read<LessonProvider>();
       
       
+      // Kiểm tra nếu chưa có dữ liệu, force load
+      final hasData = lessonProvider.lessons.isNotEmpty;
+      
       if (authProvider.userData?.id != null) {
-        // Try real-time streams first
-        lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id, force: true);
+        } else {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        }
         
-        // Fallback: Load data directly if no data after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
+        // Fallback: Load data directly if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
           if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
             lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
           }
         });
         
         // Additional fallback: Try loading all lessons if teacher-specific fails
-        Future.delayed(const Duration(seconds: 5), () {
+        Future.delayed(const Duration(seconds: 4), () {
           if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
             lessonProvider.loadLessons();
           }
         });
       } else {
-        // Try real-time streams for all data
-        lessonProvider.setupAllRealtimeStreams();
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupAllRealtimeStreams(force: true);
+        } else {
+          lessonProvider.setupAllRealtimeStreams();
+        }
         
-        // Fallback: Load all data if no data after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
+        // Fallback: Load all data if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
           if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
             lessonProvider.loadLessons();
           }

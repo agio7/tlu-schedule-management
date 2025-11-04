@@ -45,7 +45,9 @@ class LessonProvider with ChangeNotifier {
     _error = null;
     
     try {
+      print('Loading lessons for teacher: $teacherId');
       _lessons = await LessonService.getLessonsByTeacher(teacherId);
+      print('Loaded ${_lessons.length} lessons from Firebase');
       notifyListeners();
     } catch (e) {
       _error = 'Lỗi khi tải dữ liệu giảng viên: $e';
@@ -188,10 +190,14 @@ class LessonProvider with ChangeNotifier {
   // Load leave requests by teacher ID
   Future<void> loadLeaveRequestsByTeacher(String teacherId) async {
     try {
+      print('Loading leave requests for teacher: $teacherId');
       _leaveRequests = await LeaveRequestService.getLeaveRequestsByTeacher(teacherId);
+      print('Loaded ${_leaveRequests.length} leave requests');
       notifyListeners();
     } catch (e) {
       print('Error loading leave requests by teacher: $e');
+      _error = 'Lỗi khi tải dữ liệu nghỉ dạy: $e';
+      notifyListeners();
     }
   }
 
@@ -216,23 +222,43 @@ class LessonProvider with ChangeNotifier {
   }
 
   // Setup real-time streams
-  void setupRealtimeStreams(String teacherId) {
-    // Chỉ setup một lần
-    if (_streamsInitialized) {
+  void setupRealtimeStreams(String teacherId, {bool force = false}) {
+    // Nếu đã setup và không force, chỉ return nếu cùng teacherId
+    if (_streamsInitialized && !force) {
+      print('Streams already initialized, skipping setup');
       return;
     }
+    
+    print('Setting up realtime streams for teacher: $teacherId');
     
     // Cancel existing subscriptions nếu có
     _lessonsSubscription?.cancel();
     _leaveRequestsSubscription?.cancel();
     
-    // Initial load ngay lập tức để có dữ liệu sẵn
-    loadLessonsByTeacher(teacherId);
-    loadLeaveRequestsByTeacher(teacherId);
+    // Reset flag nếu force
+    if (force) {
+      _streamsInitialized = false;
+      print('Force reload: resetting streams');
+    }
+    
+    // Initial load ngay lập tức để có dữ liệu sẵn (không await để không block)
+    print('Loading lessons and leave requests for teacher: $teacherId');
+    loadLessonsByTeacher(teacherId).then((_) {
+      print('Lessons loaded: ${_lessons.length} lessons');
+    }).catchError((e) {
+      print('Error loading lessons: $e');
+    });
+    
+    loadLeaveRequestsByTeacher(teacherId).then((_) {
+      print('Leave requests loaded: ${_leaveRequests.length} requests');
+    }).catchError((e) {
+      print('Error loading leave requests: $e');
+    });
     
     // Listen to lessons changes
     _lessonsSubscription = RealtimeService.getLessonsStreamByTeacher(teacherId).listen(
       (lessons) {
+        print('Lessons stream update: ${lessons.length} lessons received');
         _lessons = lessons;
         notifyListeners();
       },
@@ -248,6 +274,7 @@ class LessonProvider with ChangeNotifier {
     // Listen to leave requests changes
     _leaveRequestsSubscription = RealtimeService.getLeaveRequestsStreamByTeacher(teacherId).listen(
       (leaveRequests) {
+        print('Leave requests stream update: ${leaveRequests.length} requests received');
         _leaveRequests = leaveRequests;
         notifyListeners();
       },
@@ -264,15 +291,20 @@ class LessonProvider with ChangeNotifier {
   }
 
   // Setup real-time streams for all data (admin view)
-  void setupAllRealtimeStreams() {
-    // Chỉ setup một lần
-    if (_streamsInitialized) {
+  void setupAllRealtimeStreams({bool force = false}) {
+    // Nếu đã setup và không force, return
+    if (_streamsInitialized && !force) {
       return;
     }
     
     // Cancel existing subscriptions nếu có
     _lessonsSubscription?.cancel();
     _leaveRequestsSubscription?.cancel();
+    
+    // Reset flag nếu force
+    if (force) {
+      _streamsInitialized = false;
+    }
     
     // Initial load ngay lập tức để có dữ liệu sẵn
     loadLessons();

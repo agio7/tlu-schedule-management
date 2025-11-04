@@ -20,10 +20,25 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     // Setup real-time data streams
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
+      final lessonProvider = context.read<LessonProvider>();
+      
+      // Kiểm tra nếu chưa có dữ liệu, force reload
+      final hasData = lessonProvider.lessons.isNotEmpty;
+      
       if (authProvider.userData?.id != null) {
-        context.read<LessonProvider>().setupRealtimeStreams(authProvider.userData!.id);
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id, force: true);
+        } else {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        }
       } else {
-        context.read<LessonProvider>().setupAllRealtimeStreams();
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupAllRealtimeStreams(force: true);
+        } else {
+          lessonProvider.setupAllRealtimeStreams();
+        }
       }
     });
   }
@@ -109,14 +124,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             icon: const Icon(Icons.notifications, color: Colors.white),
                           ),
                           IconButton(
-                            onPressed: () {
-                              context.go('/seed-data');
-                            },
-                            icon: const Icon(Icons.data_usage, color: Colors.white),
-                          ),
-                          IconButton(
                             onPressed: () async {
                               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              final lessonProvider = Provider.of<LessonProvider>(context, listen: false);
+                              // Reset streams trước khi đăng xuất
+                              lessonProvider.resetStreams();
                               await authProvider.signOut();
                             },
                             icon: const Icon(Icons.logout, color: Colors.white),
@@ -166,41 +178,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             ),
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Statistics Cards
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Hôm nay',
-                          todayLessons.length.toString(),
-                          Icons.today,
-                          const Color(0xFF6B46C1),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Sắp tới',
-                          upcomingLessons.length.toString(),
-                          Icons.schedule,
-                          Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Đã hoàn thành',
-                          completedLessons.length.toString(),
-                          Icons.check_circle,
-                          Colors.green,
-                        ),
                       ),
                     ],
                   ),
@@ -303,45 +280,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       bottomNavigationBar: const BottomNavigation(currentIndex: 0),
     );
   }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 }
+
 

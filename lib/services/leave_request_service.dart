@@ -21,15 +21,39 @@ class LeaveRequestService {
   // Lấy leave requests theo teacher ID
   static Future<List<LeaveRequest>> getLeaveRequestsByTeacher(String teacherId) async {
     try {
+      print(' Querying Firebase for leaveRequests where teacherId = "$teacherId"');
       final QuerySnapshot snapshot = await _firestore
           .collection('leaveRequests')
           .where('teacherId', isEqualTo: teacherId)
           .get();
-      return snapshot.docs.map((doc) {
-        return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      
+      print(' Found ${snapshot.docs.length} leave requests with teacherId = "$teacherId"');
+      
+      // Nếu không tìm thấy, thử query tất cả để xem có dữ liệu gì không (debug)
+      if (snapshot.docs.isEmpty) {
+        print('️ No leave requests found with teacherId = "$teacherId"');
+        print(' Checking all leave requests in Firebase...');
+        final allRequests = await _firestore.collection('leaveRequests').limit(5).get();
+        if (allRequests.docs.isNotEmpty) {
+          print(' Sample teacherIds in Firebase:');
+          for (var doc in allRequests.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            print('   - teacherId: "${data['teacherId']}" (type: ${data['type']}, reason: ${data['reason']})');
+          }
+        } else {
+          print('   - No leave requests found in Firebase at all');
+        }
+      }
+      
+      final requests = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        print(' Leave Request: ${data['type']} - ${data['reason']}');
+        return LeaveRequest.fromMap(data, doc.id);
       }).toList();
+      
+      return requests;
     } catch (e) {
-      print('Error getting leave requests by teacher: $e');
+      print(' Error getting leave requests by teacher: $e');
       return [];
     }
   }

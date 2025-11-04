@@ -61,6 +61,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           IconButton(
             onPressed: () async {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final lessonProvider = Provider.of<LessonProvider>(context, listen: false);
+              // Reset streams trước khi đăng xuất
+              lessonProvider.resetStreams();
               await authProvider.signOut();
             },
             icon: const Icon(Icons.logout),
@@ -373,6 +376,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 }
+
 
 
 

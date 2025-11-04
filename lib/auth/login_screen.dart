@@ -48,11 +48,14 @@ class _LoginScreenState extends State<LoginScreen> {
         if (success) {
           // Load dữ liệu ngay sau khi đăng nhập
           final lessonProvider = Provider.of<LessonProvider>(context, listen: false);
+          // Reset streams trước để đảm bảo load lại dữ liệu
+          lessonProvider.resetStreams();
+          
           if (authProvider.userData?.id != null) {
-            // Setup streams và load dữ liệu
-            lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+            // Setup streams và load dữ liệu với force = true
+            lessonProvider.setupRealtimeStreams(authProvider.userData!.id, force: true);
           } else {
-            lessonProvider.setupAllRealtimeStreams();
+            lessonProvider.setupAllRealtimeStreams(force: true);
           }
           
           // Sử dụng GoRouter để điều hướng

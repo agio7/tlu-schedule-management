@@ -27,10 +27,39 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
     // Setup real-time data streams
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
+      final lessonProvider = context.read<LessonProvider>();
+      
+      // Kiểm tra nếu chưa có dữ liệu, force load
+      final hasData = lessonProvider.lessons.isNotEmpty;
+      
       if (authProvider.userData?.id != null) {
-        context.read<LessonProvider>().setupRealtimeStreams(authProvider.userData!.id);
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id, force: true);
+        } else {
+          lessonProvider.setupRealtimeStreams(authProvider.userData!.id);
+        }
+        
+        // Fallback: Load data directly if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessonsByTeacher(authProvider.userData!.id);
+          }
+        });
       } else {
-        context.read<LessonProvider>().setupAllRealtimeStreams();
+        // Nếu chưa có dữ liệu, force setup lại
+        if (!hasData) {
+          lessonProvider.setupAllRealtimeStreams(force: true);
+        } else {
+          lessonProvider.setupAllRealtimeStreams();
+        }
+        
+        // Fallback: Load all data if no data after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (lessonProvider.lessons.isEmpty && !lessonProvider.isLoading) {
+            lessonProvider.loadLessons();
+          }
+        });
       }
     });
   }
