@@ -35,7 +35,6 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
     'Phê duyệt',
     'Quản lý',
     'Báo cáo',
-    'Reset Database',
   ];
 
   @override
@@ -104,7 +103,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
                       _buildNavItem(2, Icons.approval, 'Phê duyệt'),
                       _buildNavItem(3, Icons.settings, 'Quản lý'),
                       _buildNavItem(4, Icons.analytics, 'Báo cáo'),
-                      _buildNavItem(5, Icons.refresh, 'Reset Database'),
+                      
                     ],
                   ),
                 ),

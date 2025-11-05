@@ -344,10 +344,11 @@ class _CRUDScreenState extends State<CRUDScreen> {
   void _showAddDialog() {
     showDialog(
       context: context,
-      builder: (context) => _buildFormDialog(
+      builder: (dialogContext) => _buildFormDialog(
         title: 'Thêm ${widget.type}',
         item: null,
         onSave: (formData) => _addItem(formData),
+        dialogContext: dialogContext,
       ),
     );
   }
@@ -355,10 +356,11 @@ class _CRUDScreenState extends State<CRUDScreen> {
   void _showEditDialog(dynamic item) {
     showDialog(
       context: context,
-      builder: (context) => _buildFormDialog(
+      builder: (dialogContext) => _buildFormDialog(
         title: 'Chỉnh sửa ${widget.type}',
         item: item,
         onSave: (formData) => _updateItem(item, formData),
+        dialogContext: dialogContext,
       ),
     );
   }
@@ -394,6 +396,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
     required String title,
     required dynamic item,
     required Function(Map<String, dynamic>) onSave,
+    required BuildContext dialogContext,
   }) {
     final formKey = GlobalKey<FormState>();
     final controllers = _createControllers(item);
@@ -408,14 +411,14 @@ class _CRUDScreenState extends State<CRUDScreen> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(dialogContext),
           child: const Text('Hủy'),
         ),
         ElevatedButton(
           onPressed: () {
             if (formKey.currentState!.validate()) {
               final formData = _getFormData(controllers);
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               onSave(formData);
             }
           },
