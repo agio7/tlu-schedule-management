@@ -38,6 +38,7 @@ class AdminService {
       final schedulesCount = schedulesQuery.docs.length;
       
       final stats = {
+        // canonical keys
         'totalUsers': usersQuery.docs.length,
         'teachers': teachersCount,
         'admins': adminsCount,
@@ -46,6 +47,10 @@ class AdminService {
         'rooms': roomsCount,
         'schedules': schedulesCount,
         'pendingLeaveRequests': pendingLeaveRequestsCount,
+        // compatibility aliases for UI expecting `total*` keys
+        'totalTeachers': teachersCount,
+        'totalRooms': roomsCount,
+        'totalSchedules': schedulesCount,
       };
       
       print('✅ AdminService: Dashboard stats: $stats');
@@ -61,6 +66,10 @@ class AdminService {
         'rooms': 0,
         'schedules': 0,
         'pendingLeaveRequests': 0,
+        // aliases
+        'totalTeachers': 0,
+        'totalRooms': 0,
+        'totalSchedules': 0,
       };
     }
   }
