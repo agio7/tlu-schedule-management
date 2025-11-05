@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/lesson_provider.dart';
 import '../../models/lesson.dart';
+import '../../models/user.dart';
+import '../../services/student_service.dart';
 import '../../widgets/bottom_navigation.dart';
 
 class LessonAttendanceScreen extends StatefulWidget {
@@ -18,29 +20,61 @@ class LessonAttendanceScreen extends StatefulWidget {
 }
 
 class _LessonAttendanceScreenState extends State<LessonAttendanceScreen> {
-  final List<String> _students = [
-    'Nguyễn Văn A',
-    'Trần Thị B',
-    'Lê Văn C',
-    'Phạm Thị D',
-    'Hoàng Văn E',
-    'Vũ Thị F',
-    'Đặng Văn G',
-    'Bùi Thị H',
-    'Phan Văn I',
-    'Ngô Thị K',
-  ];
-
+  List<User> _students = [];
   final Set<String> _presentStudents = <String>{};
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with existing attendance if any
-    final lessonProvider = context.read<LessonProvider>();
-    final lesson = lessonProvider.getLessonById(widget.lessonId);
-    if (lesson != null) {
+    _loadStudents();
+  }
+
+  Future<void> _loadStudents() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final lessonProvider = context.read<LessonProvider>();
+      final lesson = lessonProvider.getLessonById(widget.lessonId);
+      
+      if (lesson == null) {
+        setState(() {
+          _errorMessage = 'Không tìm thấy buổi học';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Initialize with existing attendance if any
       _presentStudents.addAll(lesson.attendanceList);
+
+      // Thử lấy theo className trước
+      List<User> students = await StudentService.getStudentsByClassName(lesson.className);
+      
+      // Nếu không có, thử lấy theo classroomId
+      if (students.isEmpty && lesson.classroomId != null) {
+        students = await StudentService.getStudentsByClassroomId(lesson.classroomId!);
+      }
+
+      // Nếu vẫn không có, lấy tất cả sinh viên (fallback)
+      if (students.isEmpty) {
+        students = await StudentService.getAllStudents();
+      }
+
+      setState(() {
+        _students = students;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi khi tải danh sách sinh viên: $e';
+        _isLoading = false;
+      });
+      print('Error loading students: $e');
     }
   }
 
@@ -250,149 +284,207 @@ class _LessonAttendanceScreenState extends State<LessonAttendanceScreen> {
                         ),
                       ],
                     ),
-                    child: Column(
-                      children: [
-                        // Table Header
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              topRight: Radius.circular(12),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF6B46C1),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 50,
-                                child: Text(
-                                  'STT',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 80,
-                                child: Text(
-                                  'Mã SV',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  'Họ tên',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  'Trạng thái',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Student List
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: _students.length,
-                            itemBuilder: (context, index) {
-                              final student = _students[index];
-                              final isPresent = _presentStudents.contains(student);
-                              final studentId = 'SV${(index + 1).toString().padLeft(3, '0')}';
-
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(color: Colors.grey[200]!),
-                                  ),
-                                ),
-                                child: Row(
+                          )
+                        : _errorMessage != null
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    SizedBox(
-                                      width: 50,
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF374151),
-                                        ),
-                                      ),
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Colors.red[300],
                                     ),
-                                    SizedBox(
-                                      width: 80,
-                                      child: Text(
-                                        studentId,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF374151),
-                                        ),
-                                      ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _errorMessage!,
+                                      style: TextStyle(color: Colors.red[600]),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    Expanded(
-                                      child: Text(
-                                        student,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF374151),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 100,
-                                      child: Row(
-                                        children: [
-                                          Checkbox(
-                                            value: isPresent,
-                                            onChanged: (lesson.status == 'upcoming' || lesson.status == 'ongoing') 
-                                                ? (value) {
-                                                    setState(() {
-                                                      if (value == true) {
-                                                        _presentStudents.add(student);
-                                                      } else {
-                                                        _presentStudents.remove(student);
-                                                      }
-                                                    });
-                                                  }
-                                                : null,
-                                            activeColor: const Color(0xFF6B46C1),
-                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          ),
-                                          Text(
-                                            isPresent ? 'Có mặt' : 'Vắng',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: isPresent ? Colors.green[600] : Colors.red[600],
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: _loadStudents,
+                                      child: const Text('Thử lại'),
                                     ),
                                   ],
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                              )
+                            : _students.isEmpty
+                                ? const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.people_outline,
+                                          size: 48,
+                                          color: Colors.grey,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Không có sinh viên nào',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Column(
+                                    children: [
+                                      // Table Header
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[50],
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 50,
+                                              child: Text(
+                                                'STT',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 80,
+                                              child: Text(
+                                                'Mã SV',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                'Họ tên',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 100,
+                                              child: Text(
+                                                'Trạng thái',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Student List
+                                      Expanded(
+                                        child: ListView.builder(
+                                          itemCount: _students.length,
+                                          itemBuilder: (context, index) {
+                                            final student = _students[index];
+                                            // Sử dụng studentId từ user hoặc tạo từ index
+                                            final studentId = student.id.length <= 10 
+                                                ? student.id 
+                                                : 'SV${(index + 1).toString().padLeft(3, '0')}';
+                                            // Kiểm tra attendance theo fullName (tương thích với dữ liệu cũ) hoặc studentId
+                                            final isPresent = _presentStudents.contains(student.fullName) || 
+                                                              _presentStudents.contains(student.id);
+
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              decoration: BoxDecoration(
+                                                border: Border(
+                                                  bottom: BorderSide(color: Colors.grey[200]!),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  SizedBox(
+                                                    width: 50,
+                                                    child: Text(
+                                                      '${index + 1}',
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Color(0xFF374151),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 80,
+                                                    child: Text(
+                                                      studentId,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Color(0xFF374151),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      student.fullName,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Color(0xFF374151),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 100,
+                                                    child: Row(
+                                                      children: [
+                                                        Checkbox(
+                                                          value: isPresent,
+                                                          onChanged: (lesson.status == 'upcoming' || lesson.status == 'ongoing') 
+                                                              ? (value) {
+                                                                  setState(() {
+                                                                    if (value == true) {
+                                                                      // Lưu theo fullName để tương thích với dữ liệu cũ
+                                                                      _presentStudents.add(student.fullName);
+                                                                    } else {
+                                                                      _presentStudents.remove(student.fullName);
+                                                                      _presentStudents.remove(student.id);
+                                                                    }
+                                                                  });
+                                                                }
+                                                              : null,
+                                                          activeColor: const Color(0xFF6B46C1),
+                                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        ),
+                                                        Text(
+                                                          isPresent ? 'Có mặt' : 'Vắng',
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: isPresent ? Colors.green[600] : Colors.red[600],
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                   ),
                 ),
 

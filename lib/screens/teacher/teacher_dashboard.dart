@@ -243,7 +243,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                     ),
                                     SizedBox(height: 16),
                                     Text(
-                                      'Không có buổi học nào hôm nay',
+                                      'Không có ca dạy nào hôm nay',
                                       style: TextStyle(
                                         color: Colors.grey,
                                         fontSize: 16,

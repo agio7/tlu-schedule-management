@@ -23,6 +23,8 @@ class LeaveRequest {
   final String? approverNotes;
   final DateTime requestDate;
   final DateTime? approvedDate;
+  final String? roomId; // ID của phòng học đã chọn (cho dạy bù)
+  final String? roomName; // Tên phòng học (để hiển thị)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -42,6 +44,8 @@ class LeaveRequest {
     this.approverNotes,
     required this.requestDate,
     this.approvedDate,
+    this.roomId,
+    this.roomName,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -83,6 +87,8 @@ class LeaveRequest {
               ? map['approvedDate'] as DateTime 
               : (map['approvedDate'] as dynamic).toDate())
           : null,
+      roomId: map['roomId']?.toString(),
+      roomName: map['roomName']?.toString(),
       createdAt: map['createdAt'] != null 
           ? (map['createdAt'] is DateTime 
               ? map['createdAt'] as DateTime 
@@ -113,6 +119,8 @@ class LeaveRequest {
       'approverNotes': approverNotes,
       'requestDate': requestDate,
       'approvedDate': approvedDate,
+      'roomId': roomId,
+      'roomName': roomName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -142,6 +150,8 @@ class LeaveRequest {
     String? approverNotes,
     DateTime? requestDate,
     DateTime? approvedDate,
+    String? roomId,
+    String? roomName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -161,6 +171,8 @@ class LeaveRequest {
       approverNotes: approverNotes ?? this.approverNotes,
       requestDate: requestDate ?? this.requestDate,
       approvedDate: approvedDate ?? this.approvedDate,
+      roomId: roomId ?? this.roomId,
+      roomName: roomName ?? this.roomName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

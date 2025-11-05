@@ -42,7 +42,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
       appBar: AppBar(
         backgroundColor: const Color(0xFF6B46C1),
         foregroundColor: Colors.white,
-        title: const Text('Chi tiết buổi học'),
+        title: const Text('Chi tiết buổi dạy'),
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.go('/dashboard'),
