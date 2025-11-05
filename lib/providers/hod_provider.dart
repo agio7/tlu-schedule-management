@@ -21,6 +21,10 @@ class AppState extends ChangeNotifier {
   int currentTab = 0;
   String? _departmentId;
   List<String> _departmentTeacherIds = [];
+  String? _selectedLecturerForSchedule; // Lưu tên giảng viên để filter ở màn hình lịch dạy
+  String? _selectedClassForAttendance; // Lưu lớp để filter ở màn hình thống kê điểm danh
+  String? _selectedSubjectForAttendance; // Lưu môn học để filter ở màn hình thống kê điểm danh
+  bool _shouldShowAttendanceStats = false; // Flag để chuyển đến màn hình thống kê điểm danh
   
   // Flag để chuyển đổi giữa Firebase và sample data
   static const bool useSampleData = true; // Đổi thành false để dùng Firebase
@@ -51,6 +55,42 @@ class AppState extends ChangeNotifier {
 
   void setTab(int index) {
     currentTab = index;
+    notifyListeners();
+  }
+
+  // Set lecturer filter cho màn hình lịch dạy
+  void setLecturerForSchedule(String? lecturerName) {
+    _selectedLecturerForSchedule = lecturerName;
+    notifyListeners();
+  }
+
+  // Get lecturer filter cho màn hình lịch dạy
+  String? get selectedLecturerForSchedule => _selectedLecturerForSchedule;
+
+  // Clear lecturer filter sau khi đã sử dụng
+  void clearLecturerForSchedule() {
+    _selectedLecturerForSchedule = null;
+    notifyListeners();
+  }
+
+  // Set filter cho màn hình thống kê điểm danh (khi bấm vào môn đã dạy)
+  void setAttendanceStatsFilter(String className, String subject) {
+    _selectedClassForAttendance = className;
+    _selectedSubjectForAttendance = subject;
+    _shouldShowAttendanceStats = true;
+    notifyListeners();
+  }
+
+  // Get filter cho màn hình thống kê điểm danh
+  String? get selectedClassForAttendance => _selectedClassForAttendance;
+  String? get selectedSubjectForAttendance => _selectedSubjectForAttendance;
+  bool get shouldShowAttendanceStats => _shouldShowAttendanceStats;
+
+  // Clear filter sau khi đã sử dụng
+  void clearAttendanceStatsFilter() {
+    _selectedClassForAttendance = null;
+    _selectedSubjectForAttendance = null;
+    _shouldShowAttendanceStats = false;
     notifyListeners();
   }
 

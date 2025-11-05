@@ -575,6 +575,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    
+    // Check xem có lecturer filter từ AppState không (khi chuyển từ màn hình giảng viên)
+    if (state.selectedLecturerForSchedule != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && state.selectedLecturerForSchedule != null) {
+          setState(() {
+            lecturer = state.selectedLecturerForSchedule!;
+          });
+          // Clear filter sau khi đã sử dụng
+          state.clearLecturerForSchedule();
+        }
+      });
+    }
 
     // Tạo danh sách các giá trị duy nhất cho Dropdown
     final allLecturers = ['Tất cả', ...state.lecturers.map((e) => e.name)];
@@ -678,8 +691,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             child: InkWell(
                               onTap: s.status == SessionStatus.daDay
                                   ? () {
-                                      // Chuyển đến màn hình thống kê (index 3)
-                                      _jumpTo(context, 3);
+                                      // Chuyển đến màn hình thống kê điểm danh với filter theo lớp và môn học
+                                      context.read<AppState>().setAttendanceStatsFilter(s.className, s.subject);
+                                      context.read<AppState>().setTab(3);
                                     }
                                   : null,
                               borderRadius: BorderRadius.circular(12),
@@ -1203,27 +1217,74 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  String searchText = '';
+  String selectedCardType = 'Thống kê giờ giảng'; // Default selected card
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check xem có flag để chuyển đến màn hình thống kê điểm danh không
+    final appState = context.watch<AppState>();
+    if (appState.shouldShowAttendanceStats && selectedCardType != 'Thống kê điểm danh') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            selectedCardType = 'Thống kê điểm danh';
+          });
+        }
+      });
+    }
+  }
+
+  String _getAppBarTitle() {
+    switch (selectedCardType) {
+      case 'Thống kê điểm danh':
+        return 'Thống kê điểm danh';
+      case 'Thống kê nghỉ, dạy bù':
+        return 'Thống kê nghỉ, dạy bù';
+      case 'Tiến độ giảng dạy':
+        return 'Tiến độ giảng dạy';
+      default:
+        return 'Thống kê giờ giảng';
+    }
+  }
+
+  Widget _getContentPreview(AppState state) {
+    switch (selectedCardType) {
+      case 'Thống kê điểm danh':
+        return _AttendanceStatisticsPreview(state: state);
+      case 'Thống kê nghỉ, dạy bù':
+        return _LeaveMakeupStatisticsPreview(state: state);
+      case 'Tiến độ giảng dạy':
+        return _TeachingProgressPreview(state: state);
+      default:
+        return _StatisticsPreview(lecturers: state.lecturers);
+    }
+  }
+
+  String _getReportTypeForExport() {
+    switch (selectedCardType) {
+      case 'Thống kê điểm danh':
+        return 'Báo cáo điểm danh';
+      case 'Thống kê nghỉ, dạy bù':
+        return 'Báo cáo nghỉ dạy, dạy bù';
+      case 'Tiến độ giảng dạy':
+        return 'Báo cáo tiến độ';
+      default:
+        return 'Báo cáo giờ giảng';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
 
-    // Thay đổi tiêu đề AppBar
     return Scaffold(
-      appBar: const HoDAppBar(title: 'Thống kê giờ giảng'),
+      appBar: HoDAppBar(title: _getAppBarTitle()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thanh tìm kiếm
-            _SearchField(
-              hintText: 'Tìm kiếm theo giảng viên...',
-              onChanged: (value) => setState(() => searchText = value),
-            ),
-            const SizedBox(height: 20),
-
             // Báo cáo thống kê (4 KPI cards)
             Text('Báo cáo thống kê', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
@@ -1233,46 +1294,54 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              children: const [
+              children: [
                 _ReportCard(
                   icon: Icons.bar_chart,
                   color: Colors.indigo,
                   title: 'Thống kê giờ giảng',
                   subtitle: 'Tổng hợp giờ giảng theo giảng viên',
+                  isSelected: selectedCardType == 'Thống kê giờ giảng',
+                  onTap: () => setState(() => selectedCardType = 'Thống kê giờ giảng'),
                 ),
                 _ReportCard(
                   icon: Icons.people_alt_outlined,
                   color: Colors.blue,
                   title: 'Thống kê điểm danh',
                   subtitle: 'Tỷ lệ điểm danh theo lớp, môn học',
+                  isSelected: selectedCardType == 'Thống kê điểm danh',
+                  onTap: () => setState(() => selectedCardType = 'Thống kê điểm danh'),
                 ),
                 _ReportCard(
                   icon: Icons.access_time_filled,
                   color: Colors.amber,
                   title: 'Thống kê nghỉ, dạy bù',
                   subtitle: 'Tổng hợp tình hình nghỉ và bù giờ',
+                  isSelected: selectedCardType == 'Thống kê nghỉ, dạy bù',
+                  onTap: () => setState(() => selectedCardType = 'Thống kê nghỉ, dạy bù'),
                 ),
                 _ReportCard(
                   icon: Icons.check_circle_outline,
                   color: Colors.green,
                   title: 'Tiến độ giảng dạy',
                   subtitle: 'Tỷ lệ hoàn thành theo kế hoạch',
+                  isSelected: selectedCardType == 'Tiến độ giảng dạy',
+                  onTap: () => setState(() => selectedCardType = 'Tiến độ giảng dạy'),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Xem trước báo cáo (Giờ giảng)
+            // Xem trước báo cáo (Dynamic based on selection)
             _Section(
               title: 'Xem trước báo cáo',
-              child: _StatisticsPreview(lecturers: state.lecturers),
+              child: _getContentPreview(state),
             ),
             const SizedBox(height: 20),
 
             // Xuất báo cáo (Form)
             _Section(
               title: 'Xuất báo cáo',
-              child: _ExportReportForm(),
+              child: _ExportReportForm(selectedReportType: _getReportTypeForExport()),
             ),
           ],
         ),
@@ -1288,12 +1357,16 @@ class _ReportCard extends StatelessWidget {
     required this.color,
     required this.title,
     required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
   });
 
   final IconData icon;
   final Color color;
   final String title;
   final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1301,10 +1374,13 @@ class _ReportCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(
+          color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade200,
+          width: isSelected ? 2 : 1,
+        ),
       ),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1391,12 +1467,503 @@ class _StatisticsPreview extends StatelessWidget {
   }
 }
 
+// Widget Thống kê điểm danh
+class _AttendanceStatisticsPreview extends StatefulWidget {
+  const _AttendanceStatisticsPreview({required this.state});
+  final AppState state;
+
+  @override
+  State<_AttendanceStatisticsPreview> createState() => _AttendanceStatisticsPreviewState();
+}
+
+class _AttendanceStatisticsPreviewState extends State<_AttendanceStatisticsPreview> {
+  String? _selectedClass;
+  String? _selectedSubject;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo selectedClass với lớp đầu tiên
+    final allClasses = widget.state.schedules
+        .map((s) => s.className)
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList();
+    if (allClasses.isNotEmpty) {
+      _selectedClass = allClasses[0];
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check xem có filter từ AppState không (khi chuyển từ màn hình lịch dạy)
+    final appState = context.watch<AppState>();
+    if (appState.shouldShowAttendanceStats && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && appState.shouldShowAttendanceStats) {
+          setState(() {
+            _selectedClass = appState.selectedClassForAttendance;
+            _selectedSubject = appState.selectedSubjectForAttendance;
+          });
+          // Clear filter sau khi đã sử dụng
+          appState.clearAttendanceStatsFilter();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Lấy tất cả các lớp từ schedules
+    final allClasses = widget.state.schedules
+        .map((s) => s.className)
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList();
+
+    // Lấy các môn học của lớp được chọn
+    List<String> availableSubjects = ['Tất cả'];
+    if (_selectedClass != null && _selectedClass!.isNotEmpty) {
+      final subjects = widget.state.schedules
+          .where((s) => s.className == _selectedClass)
+          .map((s) => s.subject)
+          .where((s) => s.isNotEmpty)
+          .toSet()
+          .toList();
+      availableSubjects = ['Tất cả', ...subjects];
+    }
+
+    // Nếu chưa có lớp được chọn, sử dụng lớp đầu tiên
+    if (_selectedClass == null && allClasses.isNotEmpty) {
+      _selectedClass = allClasses[0];
+    }
+
+    // Nếu chưa có môn học được chọn hoặc môn học đã chọn không còn trong danh sách (khi đổi lớp), chọn "Tất cả"
+    if (_selectedSubject == null || !availableSubjects.contains(_selectedSubject)) {
+      _selectedSubject = 'Tất cả';
+    }
+
+    // Lọc schedules theo lớp được chọn
+    final classSchedules = widget.state.schedules
+        .where((s) => s.className == _selectedClass)
+        .where((s) => s.status == SessionStatus.daDay)
+        .toList();
+
+    // Lọc thêm theo môn học nếu có (và không phải "Tất cả")
+    final filteredSchedules = _selectedSubject != null && 
+                              _selectedSubject!.isNotEmpty && 
+                              _selectedSubject != 'Tất cả'
+        ? classSchedules.where((s) => s.subject == _selectedSubject).toList()
+        : classSchedules;
+
+    if (filteredSchedules.isEmpty && allClasses.isEmpty) {
+      return const Center(child: Text('Không có dữ liệu điểm danh.'));
+    }
+
+    // Tính tổng quan điểm danh (giả lập dựa vào số buổi)
+    final totalSessions = filteredSchedules.length;
+    final presentRate = totalSessions > 0 ? 89.0 : 0.0;
+    final excusedRate = totalSessions > 0 ? 8.0 : 0.0;
+    final unexcusedRate = totalSessions > 0 ? 3.0 : 0.0;
+
+    // Lấy danh sách các buổi học đã dạy để hiển thị (sắp xếp theo ngày)
+    final sortedSchedules = List<ScheduleItem>.from(filteredSchedules)
+      ..sort((a, b) => b.date.compareTo(a.date)); // Sắp xếp mới nhất trước
+
+    final sessionData = sortedSchedules.take(5).map((schedule) {
+      // Giả lập phần trăm điểm danh cho mỗi buổi (dựa vào ngày)
+      final attendancePercent = 85.0 + (schedule.date.day % 15);
+      return {'date': schedule.date, 'percent': attendancePercent};
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Dropdown Lớp và Môn học
+        Row(
+          children: [
+            Expanded(
+              child: _SelectableDropdown(
+                label: 'Lớp',
+                value: _selectedClass ?? 'Chọn lớp',
+                items: allClasses.isEmpty ? ['CNTT01-K15'] : allClasses,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedClass = value;
+                    _selectedSubject = null; // Reset môn học khi đổi lớp
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SelectableDropdown(
+                label: 'Môn học',
+                value: _selectedSubject ?? 'Tất cả',
+                items: availableSubjects,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSubject = value;
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Tổng quan điểm danh
+        Text('Tổng quan điểm danh', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _AttendanceCircle(
+              icon: Icons.check_circle,
+              color: Colors.green,
+              percentage: presentRate,
+              label: 'Tỷ lệ có mặt',
+            ),
+            _AttendanceCircle(
+              icon: Icons.person_off,
+              color: Colors.red,
+              percentage: excusedRate,
+              label: 'Vắng có phép',
+            ),
+            _AttendanceCircle(
+              icon: Icons.person_remove,
+              color: Colors.amber,
+              percentage: unexcusedRate,
+              label: 'Vắng không phép',
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Progress bar tổng quan
+        Row(
+          children: [
+            Expanded(
+              flex: presentRate.toInt(),
+              child: Container(height: 8, decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4))),
+            ),
+            Expanded(
+              flex: excusedRate.toInt(),
+              child: Container(height: 8, decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4))),
+            ),
+            Expanded(
+              flex: unexcusedRate.toInt(),
+              child: Container(height: 8, decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(4))),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Điểm danh theo buổi học
+        if (sessionData.isNotEmpty) ...[
+          Text('Điểm danh theo buổi học', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...sessionData.map((data) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(dmy(data['date'] as DateTime), style: Theme.of(context).textTheme.bodyMedium),
+                      Text('${(data['percent'] as double).toStringAsFixed(0)}%', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: (data['percent'] as double) / 100,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.green,
+                    backgroundColor: Colors.green.withOpacity(0.1),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ] else ...[
+          const SizedBox(height: 12),
+          Text('Không có buổi học nào cho lớp này.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
+        ],
+      ],
+    );
+  }
+}
+
+// Widget Dropdown có thể chọn được
+class _SelectableDropdown extends StatelessWidget {
+  const _SelectableDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          items: items.map((String item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+// Widget vòng tròn điểm danh
+class _AttendanceCircle extends StatelessWidget {
+  const _AttendanceCircle({
+    required this.icon,
+    required this.color,
+    required this.percentage,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color color;
+  final double percentage;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                value: percentage / 100,
+                strokeWidth: 6,
+                color: color,
+                backgroundColor: color.withOpacity(0.1),
+              ),
+            ),
+            Icon(icon, color: color, size: 28),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text('${percentage.toStringAsFixed(0)}%', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+// Widget Thống kê nghỉ, dạy bù
+class _LeaveMakeupStatisticsPreview extends StatelessWidget {
+  const _LeaveMakeupStatisticsPreview({required this.state});
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    // Tính tỷ lệ nghỉ dạy theo giảng viên
+    final lecturers = state.lecturers;
+    final leaveRequests = state.leaveRequests;
+    final makeupRequests = state.makeups;
+
+    // Tính số lần nghỉ và dạy bù cho mỗi giảng viên
+    final lecturerStats = <String, Map<String, int>>{};
+    
+    for (final lecturer in lecturers) {
+      final leaveCount = leaveRequests.where((lr) => lr.lecturer == lecturer.name).length;
+      final makeupCount = makeupRequests.where((mr) => mr.lecturer == lecturer.name).length;
+      final totalSessions = state.schedules.where((s) => s.lecturer == lecturer.name && s.status == SessionStatus.daDay).length;
+      
+      final totalLeaveRequests = leaveRequests.where((lr) => lr.lecturer == lecturer.name).length;
+      final totalSessionsForLecturer = totalSessions + totalLeaveRequests; // Tổng buổi (đã dạy + nghỉ)
+      
+      lecturerStats[lecturer.name] = {
+        'leave': leaveCount,
+        'makeup': makeupCount,
+        'total': totalSessionsForLecturer > 0 ? totalSessionsForLecturer : 1, // Tránh chia 0
+      };
+    }
+
+    // Tính phần trăm nghỉ và dạy bù
+    final leaveRateData = lecturerStats.entries.map((entry) {
+      final leaveRate = (entry.value['leave']! / entry.value['total']!) * 100;
+      return {'name': entry.key, 'rate': leaveRate.clamp(0.0, 100.0)};
+    }).toList();
+
+    final makeupRateData = lecturerStats.entries.map((entry) {
+      final makeupRate = entry.value['total']! > 0 
+          ? (entry.value['makeup']! / entry.value['total']!) * 100 
+          : 0.0;
+      // Giả lập phần trăm dạy bù cao hơn vì đã được phê duyệt
+      final approvedMakeups = makeupRequests.where((mr) => mr.lecturer == entry.key && mr.status == RequestStatus.approved).length;
+      return {'name': entry.key, 'rate': (approvedMakeups / (entry.value['total']! > 0 ? entry.value['total']! : 1)) * 100 + 85.0};
+    }).toList();
+
+    // Sắp xếp và lấy top 4
+    leaveRateData.sort((a, b) => (b['rate'] as double).compareTo(a['rate'] as double));
+    makeupRateData.sort((a, b) => (b['rate'] as double).compareTo(a['rate'] as double));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tỷ lệ nghỉ dạy
+        Text('Tỷ lệ nghỉ dạy', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...leaveRateData.take(4).map((data) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(data['name'] as String, style: Theme.of(context).textTheme.bodyMedium),
+                    Text('${(data['rate'] as double).toStringAsFixed(1)}%', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: (data['rate'] as double) / 100,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.amber,
+                  backgroundColor: Colors.amber.withOpacity(0.1),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        const SizedBox(height: 24),
+
+        // Tỷ lệ dạy bù
+        Text('Tỷ lệ dạy bù', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...makeupRateData.take(4).map((data) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(data['name'] as String, style: Theme.of(context).textTheme.bodyMedium),
+                    Text('${(data['rate'] as double).clamp(0.0, 100.0).toStringAsFixed(0)}%', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: (data['rate'] as double).clamp(0.0, 100.0) / 100,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.green,
+                  backgroundColor: Colors.green.withOpacity(0.1),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+}
+
+// Widget Tiến độ giảng dạy
+class _TeachingProgressPreview extends StatelessWidget {
+  const _TeachingProgressPreview({required this.state});
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final lecturers = state.lecturers;
+
+    if (lecturers.isEmpty) {
+      return const Center(child: Text('Không có dữ liệu giảng viên.'));
+    }
+
+    // Tính tiến độ giảng dạy dựa trên giờ giảng
+    final progressData = lecturers.map((l) {
+      final planned = l.hoursPlanned > 0 ? l.hoursPlanned : 30;
+      final actual = l.hoursActual;
+      final progress = (actual / planned * 100).clamp(0.0, 100.0);
+      return {'name': l.name, 'progress': progress, 'actual': actual, 'planned': planned};
+    }).toList();
+
+    // Sắp xếp theo tiến độ
+    progressData.sort((a, b) => (b['progress'] as double).compareTo(a['progress'] as double));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tiến độ giảng dạy', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...progressData.take(4).map((data) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(data['name'] as String, style: Theme.of(context).textTheme.bodyMedium),
+                    Text('${(data['progress'] as double).toStringAsFixed(0)}%', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: (data['progress'] as double) / 100,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.green,
+                  backgroundColor: Colors.green.withOpacity(0.1),
+                ),
+                const SizedBox(height: 2),
+                Text('${data['actual']}/${data['planned']} giờ', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+}
+
 // Widget Form Xuất báo cáo
 class _ExportReportForm extends StatelessWidget {
+  const _ExportReportForm({required this.selectedReportType});
+  final String selectedReportType;
+
   @override
   Widget build(BuildContext context) {
     // Giá trị mặc định cho Dropdown
-    const List<String> reportTypes = ['Báo cáo giờ giảng', 'Báo cáo điểm danh', 'Báo cáo nghỉ/bù', 'Báo cáo tiến độ'];
+    const List<String> reportTypes = ['Báo cáo giờ giảng', 'Báo cáo điểm danh', 'Báo cáo nghỉ dạy, dạy bù', 'Báo cáo tiến độ'];
     const List<String> timePeriods = ['Học kỳ hiện tại', 'Học kỳ trước', 'Năm học hiện tại', 'Tùy chọn'];
     const List<String> formats = ['Excel (.xlsx)', 'PDF (.pdf)'];
 
@@ -1405,7 +1972,7 @@ class _ExportReportForm extends StatelessWidget {
       children: [
         // Loại báo cáo
         const Text('Loại báo cáo', style: TextStyle(fontWeight: FontWeight.w500)),
-        _SimpleDropdown(value: reportTypes[0], items: reportTypes),
+        _SimpleDropdown(value: selectedReportType, items: reportTypes),
         const SizedBox(height: 12),
 
         // Thời gian
@@ -1633,40 +2200,50 @@ class _LecturerCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            // Sử dụng chữ cái đầu tiên của tên lót để làm avatar placeholder
-            CircleAvatar(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, child: Text(l.name.split(' ').last.characters.first)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.name, style: Theme.of(context).textTheme.titleMedium),
-              Text(l.title, style: Theme.of(context).textTheme.bodySmall),
-            ])),
-            Chip(label: const Text('Đang dạy', style: TextStyle(color: Colors.green)), backgroundColor: Colors.green.shade50, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-          ]),
-          const SizedBox(height: 8),
-          Row(children: [
-            const Icon(Icons.email, size: 16), const SizedBox(width: 6), Text(l.email),
-          ]),
-          Row(children: [
-            const Icon(Icons.phone, size: 16), const SizedBox(width: 6), Text(l.phone),
-          ]),
-          const SizedBox(height: 8),
-          Text('Môn giảng dạy: ${l.subject}'),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(value: percent, minHeight: 8, borderRadius: BorderRadius.circular(8), color: Colors.blue),
-          const SizedBox(height: 4),
-          Text('Giờ giảng: ${l.hoursActual}/${l.hoursPlanned} giờ ($percentInt%)'),
-          const SizedBox(height: 8),
-          Row(children: [
-            // Các nút hành động
-            IconButton(onPressed: () {}, icon: const Icon(Icons.edit_outlined), tooltip: 'Chỉnh sửa'),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.delete_outline, color: Colors.red), tooltip: 'Xóa'),
-            const Spacer(),
-            TextButton.icon(onPressed: () {}, icon: const Icon(Icons.calendar_month), label: const Text('Xem lịch')),
-          ]),
-        ]),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(children: [
+              // Sử dụng chữ cái đầu tiên của tên lót để làm avatar placeholder
+              CircleAvatar(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, child: Text(l.name.split(' ').last.characters.first)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(l.name, style: Theme.of(context).textTheme.titleMedium),
+                Text(l.title, style: Theme.of(context).textTheme.bodySmall),
+              ])),
+              Chip(label: const Text('Đang dạy', style: TextStyle(color: Colors.green)), backgroundColor: Colors.green.shade50, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            ]),
+            const SizedBox(height: 12),
+            Row(children: [
+              const Icon(Icons.email, size: 16), const SizedBox(width: 6), Expanded(child: Text(l.email)),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              const Icon(Icons.phone, size: 16), const SizedBox(width: 6), Text(l.phone),
+            ]),
+            const SizedBox(height: 12),
+            Text('Môn giảng dạy: ${l.subject}'),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: percent, minHeight: 8, borderRadius: BorderRadius.circular(8), color: Colors.blue),
+            const SizedBox(height: 6),
+            Text('Giờ giảng: ${l.hoursActual}/${l.hoursPlanned} giờ ($percentInt%)'),
+            const SizedBox(height: 8),
+            Row(children: [
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () {
+                  // Chuyển sang màn hình lịch dạy với filter theo giảng viên
+                  context.read<AppState>().setLecturerForSchedule(l.name);
+                  context.read<AppState>().setTab(1);
+                },
+                icon: const Icon(Icons.calendar_month),
+                label: const Text('Xem lịch'),
+              ),
+            ]),
+          ],
+        ),
       ),
     );
   }
