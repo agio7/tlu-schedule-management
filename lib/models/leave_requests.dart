@@ -9,7 +9,8 @@ enum LeaveRequestStatus {
 class LeaveRequests {
   final String id;
   final String teacherId;
-  final String scheduleId;
+  final String? scheduleId; // có thể null nếu dùng lessonId
+  final String? lessonId; // fallback if scheduleId is not used
   final String reason;
   final LeaveRequestStatus status;
   final String? approverId;
@@ -21,7 +22,8 @@ class LeaveRequests {
   LeaveRequests({
     required this.id,
     required this.teacherId,
-    required this.scheduleId,
+    this.scheduleId,
+    this.lessonId,
     required this.reason,
     required this.status,
     this.approverId,
@@ -42,20 +44,35 @@ class LeaveRequests {
       return DateTime.now();
     }
 
+    // Xử lý trường hợp dữ liệu có thể ở top-level hoặc trong attachments
+    final attachments = json['attachments'] as Map<String, dynamic>?;
+    dynamic getField(String key) {
+      if (json.containsKey(key) && json[key] != null) return json[key];
+      if (attachments != null && attachments.containsKey(key) && attachments[key] != null) {
+        return attachments[key];
+      }
+      return null;
+    }
+
+    // Parse status từ top-level hoặc attachments
+    final statusStr = getField('status') as String?;
+    final statusValue = statusStr ?? 'pending';
+
     return LeaveRequests(
       id: id,
-      teacherId: json['teacherId'] as String? ?? '',
-      scheduleId: json['scheduleId'] as String? ?? '',
-      reason: json['reason'] as String? ?? '',
+      teacherId: (getField('teacherId') as String?) ?? '',
+      scheduleId: getField('scheduleId') as String?,
+      lessonId: getField('lessonId') as String?,
+      reason: (getField('reason') as String?) ?? '',
       status: LeaveRequestStatus.values.firstWhere(
-        (e) => e.toString() == 'LeaveRequestStatus.${json['status']}',
+        (e) => e.toString() == 'LeaveRequestStatus.$statusValue',
         orElse: () => LeaveRequestStatus.pending,
       ),
-      approverId: json['approverId'] as String?,
-      approvedDate: json['approvedDate'] != null ? parseTimestamp(json['approvedDate']) : null,
-      approverNotes: json['approverNotes'] as String?,
-      createdAt: parseTimestamp(json['createdAt']),
-      updatedAt: parseTimestamp(json['updatedAt']),
+      approverId: getField('approverId') as String?,
+      approvedDate: getField('approvedDate') != null ? parseTimestamp(getField('approvedDate')) : null,
+      approverNotes: getField('approverNotes') as String?,
+      createdAt: getField('createdAt') != null ? parseTimestamp(getField('createdAt')) : DateTime.now(),
+      updatedAt: getField('updatedAt') != null ? parseTimestamp(getField('updatedAt')) : DateTime.now(),
     );
   }
 

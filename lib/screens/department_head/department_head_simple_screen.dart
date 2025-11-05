@@ -591,7 +591,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     // Tạo danh sách các giá trị duy nhất cho Dropdown
     final allLecturers = ['Tất cả', ...state.lecturers.map((e) => e.name)];
-    final allSubjects = ['Tất cả', ...state.schedules.map((e) => e.subject).toSet()];
+    // Lấy danh sách môn từ chính các lịch đang có để loại các môn không có lịch.
+    // Đồng thời gộp các tên trùng nhau theo phân biệt hoa/thường (vd: "Lập trình web" và "Lập trình Web").
+    final subjectNameByLower = <String, String>{};
+    for (final s in state.schedules) {
+      final raw = (s.subject).trim();
+      if (raw.isEmpty) continue;
+      final key = raw.toLowerCase();
+      subjectNameByLower.putIfAbsent(key, () => raw);
+    }
+    final allSubjects = ['Tất cả', ...subjectNameByLower.values];
     final allStatuses = ['Tất cả', ...SessionStatus.values.map(statusLabel)];
 
 
@@ -2052,7 +2061,9 @@ class _LecturersScreenState extends State<LecturersScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
 
-    final allSubjects = ['Tất cả', ...state.lecturers.map((e) => e.subject).toSet()];
+    final allSubjects = ['Tất cả', ...({
+      if (state.subjects.isNotEmpty) ...state.subjects else ...state.lecturers.map((e) => e.subject)
+    }.toSet())];
 
     // Logic lọc và tìm kiếm
     final filteredLecturers = state.lecturers.where((l) {
