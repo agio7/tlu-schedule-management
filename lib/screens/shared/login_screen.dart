@@ -16,6 +16,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // control visibility of password
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -122,15 +124,27 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Password Field
+                            // Password Field with visibility toggle
                             TextFormField(
                               controller: _passwordController,
-                              obscureText: true,
+                              obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Mật khẩu',
                                 prefixIcon: const Icon(Icons.lock),
                                 border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12)),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
                               ),
                               // 1. THÊM HÀNH ĐỘNG KHI GÕ: Xóa lỗi cũ
                               onChanged: (_) => auth.clearError(),

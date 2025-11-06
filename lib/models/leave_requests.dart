@@ -44,8 +44,25 @@ class LeaveRequests {
       return DateTime.now();
     }
 
-    // Xử lý trường hợp dữ liệu có thể ở top-level hoặc trong attachments
-    final attachments = json['attachments'] as Map<String, dynamic>?;
+    // [SỬA LỖI] Bắt đầu sửa lỗi ép kiểu
+    // Code gốc của bạn (bị lỗi):
+    // final attachments = json['attachments'] as Map<String, dynamic>?;
+
+    // Code đã sửa:
+    // Kiểm tra kiểu dữ liệu của 'attachments' trước khi ép kiểu.
+    Map<String, dynamic>? attachments;
+    if (json['attachments'] is Map<String, dynamic>) {
+      attachments = json['attachments'] as Map<String, dynamic>?;
+    } else if (json['attachments'] is List<dynamic> && (json['attachments'] as List<dynamic>).isNotEmpty) {
+      // Nếu 'attachments' là một List (như log lỗi đã báo),
+      // thử lấy phần tử đầu tiên (nếu nó là Map)
+      final firstAttachment = (json['attachments'] as List<dynamic>).first;
+      if (firstAttachment is Map<String, dynamic>) {
+        attachments = firstAttachment;
+      }
+    }
+    // [KẾT THÚC SỬA LỖI]
+
     dynamic getField(String key) {
       if (json.containsKey(key) && json[key] != null) return json[key];
       if (attachments != null && attachments.containsKey(key) && attachments[key] != null) {
@@ -65,7 +82,7 @@ class LeaveRequests {
       lessonId: getField('lessonId') as String?,
       reason: (getField('reason') as String?) ?? '',
       status: LeaveRequestStatus.values.firstWhere(
-        (e) => e.toString() == 'LeaveRequestStatus.$statusValue',
+            (e) => e.toString() == 'LeaveRequestStatus.$statusValue',
         orElse: () => LeaveRequestStatus.pending,
       ),
       approverId: getField('approverId') as String?,

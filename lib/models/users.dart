@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Users {
-  final String id;
+  final String id; // Đây là ID tài liệu của Firestore (ví dụ: GNAZqb...)
   final String email;
   final String fullName;
   final String role; // 'teacher', 'staff', 'admin'
   final String? departmentId;
-  final String? employeeId;
+  final String? employeeId; // Đây sẽ là ID tùy chỉnh của bạn (ví dụ: teacher_001)
   final String? academicRank;
   final String? avatar;
   final String? specialization;
@@ -46,7 +46,11 @@ class Users {
       fullName: json['fullName'] as String? ?? 'Người dùng không tên',
       role: json['role'] as String? ?? 'teacher',
       departmentId: json['departmentId'] as String?,
-      employeeId: json['employeeId'] as String?,
+
+      // [SỬA LỖI] Thay đổi dòng này để đọc đúng ID tùy chỉnh
+      // Nó sẽ ưu tiên đọc trường 'employeeId', nếu không có thì đọc trường 'id' từ dữ liệu
+      employeeId: json['employeeId'] as String? ?? json['id'] as String?,
+
       academicRank: json['academicRank'] as String?,
       avatar: json['avatar'] as String?,
       specialization: json['specialization'] as String?,
