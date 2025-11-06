@@ -1,4 +1,7 @@
+// [DÁN TOÀN BỘ CODE NÀY VÀO: providers/hod_provider.dart]
+
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/hod_models.dart';
 import '../models/users.dart';
@@ -7,12 +10,10 @@ import '../models/makeup_requests.dart';
 import '../models/schedules.dart';
 import '../models/course_sections.dart';
 import '../models/lessons.dart';
-// [THÊM MỚI] Imports cho các models (Giả định bạn có các file này)
 import '../models/subjects.dart';
 import '../models/classrooms.dart';
 import '../models/rooms.dart';
 
-// [THÊM MỚI] Imports cho các services
 import '../services/user_service.dart';
 import '../services/lesson_service.dart';
 import '../services/leave_request_service.dart';
@@ -29,33 +30,23 @@ class AppState extends ChangeNotifier {
   int currentTab = 0;
   String? _departmentId;
   List<String> _departmentTeacherIds = [];
-  String? _selectedLecturerForSchedule; // Lưu tên giảng viên để filter ở màn hình lịch dạy
-  String? _selectedClassForAttendance; // Lưu lớp để filter ở màn hình thống kê điểm danh
-  String? _selectedSubjectForAttendance; // Lưu môn học để filter ở màn hình thống kê điểm danh
-  bool _shouldShowAttendanceStats = false; // Flag để chuyển đến màn hình thống kê điểm danh
+  String? _selectedLecturerForSchedule;
+  String? _selectedClassForAttendance;
+  String? _selectedSubjectForAttendance;
+  bool _shouldShowAttendanceStats = false;
 
   static const bool useSampleData = false;
   static const bool loadAllDataForDebug = true;
 
-  // Data from Firebase or Sample
+  // Data
   List<Lecturer> _lecturers = [];
   List<LeaveRequest> _leaveRequests = [];
   List<MakeupRegistration> _makeups = [];
   List<ScheduleItem> _schedules = [];
-  List<ScheduleItem> _schedulesFromSchedules = [];
-  List<ScheduleItem> _schedulesFromLessons = [];
   List<AlertItem> _alerts = [];
   List<String> _subjectNames = [];
 
-  // Stream subscriptions
-  StreamSubscription<List<Users>>? _usersSubscription;
-  StreamSubscription<List<LeaveRequests>>? _leaveRequestsSubscription;
-  StreamSubscription<List<MakeupRequests>>? _makeupRequestsSubscription;
-  StreamSubscription<List<Schedules>>? _schedulesSubscription;
-  StreamSubscription? _subjectsSubscription;
-  StreamSubscription<List<Lessons>>? _lessonsSubscription;
-
-  // Cache Maps (Fix lỗi N+1 Query)
+  // Cache Maps
   Map<String, Users> _userCache = {};
   Map<String, CourseSections> _sectionCache = {};
   Map<String, Subjects> _subjectCache = {};
@@ -64,8 +55,9 @@ class AppState extends ChangeNotifier {
   Map<String, Lessons> _lessonCache = {};
   Map<String, Schedules> _scheduleCache = {};
   Map<String, LeaveRequests> _leaveRequestCache = {};
+  Map<String, MakeupRequests> _makeupRequestsCache = {};
 
-  // [THÊM MỚI] Cache cho dữ liệu "thô" để xây dựng lại danh sách
+  // Cache cho dữ liệu "thô"
   List<Schedules> _rawSchedules = [];
   List<Lessons> _rawLessons = [];
 
@@ -81,40 +73,44 @@ class AppState extends ChangeNotifier {
   int get totalSubjects => _schedules.map((s) => s.subject).toSet().length;
   int get totalSessions => _schedules.length;
 
+  // --- Các hàm setTab và filter (Giữ nguyên) ---
   void setTab(int index) {
     currentTab = index;
     notifyListeners();
   }
-
-  // Set lecturer filter cho màn hình lịch dạy
   void setLecturerForSchedule(String? lecturerName) {
     _selectedLecturerForSchedule = lecturerName;
     notifyListeners();
   }
-
   String? get selectedLecturerForSchedule => _selectedLecturerForSchedule;
-
   void clearLecturerForSchedule() {
     _selectedLecturerForSchedule = null;
     notifyListeners();
   }
-
   void setAttendanceStatsFilter(String className, String subject) {
     _selectedClassForAttendance = className;
     _selectedSubjectForAttendance = subject;
     _shouldShowAttendanceStats = true;
     notifyListeners();
   }
-
   String? get selectedClassForAttendance => _selectedClassForAttendance;
   String? get selectedSubjectForAttendance => _selectedSubjectForAttendance;
   bool get shouldShowAttendanceStats => _shouldShowAttendanceStats;
-
   void clearAttendanceStatsFilter() {
     _selectedClassForAttendance = null;
     _selectedSubjectForAttendance = null;
     _shouldShowAttendanceStats = false;
     notifyListeners();
+  }
+  // --- Kết thúc các hàm setTab và filter ---
+
+  // [HÀM MỚI] Dùng để dịch ID người duyệt
+  String _getApproverName(String? approverId) {
+    if (approverId == 'admin') {
+      return 'Admin (Phòng ĐT)';
+    }
+    // Giả sử bất kỳ ID nào khác là Trưởng Bộ môn
+    return 'Trưởng Bộ môn';
   }
 
   Future<void> initialize(String departmentId) async {
@@ -146,7 +142,7 @@ class AppState extends ChangeNotifier {
     _schedules = SampleDataProvider.getSampleSchedules();
     _alerts = SampleDataProvider.getSampleAlerts();
     print('✅ AppState: Loaded sample data');
-    notifyListeners();
+    _rebuildSchedules(); // Tính toán thống kê cho sample data
   }
 
   Future<void> _loadCaches() async {
@@ -161,6 +157,7 @@ class AppState extends ChangeNotifier {
         LessonService.getLessonsStream().first.timeout(const Duration(seconds: 15)),
         ScheduleService.getSchedulesStream().first.timeout(const Duration(seconds: 15)),
         LeaveRequestService.getLeaveRequestsStream().first.timeout(const Duration(seconds: 15)),
+        MakeupRequestService.getMakeupRequestsStream().first.timeout(const Duration(seconds: 15)),
       ]);
 
       final users = results[0] as List<Users>;
@@ -171,19 +168,15 @@ class AppState extends ChangeNotifier {
       final lessons = results[5] as List<Lessons>;
       final schedules = results[6] as List<Schedules>;
       final leaveRequests = results[7] as List<LeaveRequests>;
+      final makeupRequests = results[8] as List<MakeupRequests>;
 
-      // [SỬA LỖI] Xây dựng cache với HAI key (ID tài liệu VÀ employeeId)
-      _userCache = {}; // Khởi tạo map rỗng
+      _userCache = {};
       for (var u in users) {
-        // Key 1: Dùng ID tài liệu (ví dụ: "GNAZqb...")
         _userCache[u.id] = u;
-
-        // Key 2: Dùng employeeId (ví dụ: "teacher_001" hoặc "EMP002")
         if (u.employeeId != null && u.employeeId!.isNotEmpty) {
           _userCache[u.employeeId!] = u;
         }
       }
-
       _sectionCache = {for (var s in sections) s.id: s};
       _subjectCache = {for (var s in subjects) s.id: s};
       _classroomCache = {for (var c in classrooms) c.id: c};
@@ -191,6 +184,7 @@ class AppState extends ChangeNotifier {
       _lessonCache = {for (var l in lessons) l.id: l};
       _scheduleCache = {for (var s in schedules) s.id: s};
       _leaveRequestCache = {for (var r in leaveRequests) r.id: r};
+      _makeupRequestsCache = {for (var r in makeupRequests) r.id: r};
 
       print('✅ AppState: Caches loaded (Users: ${_userCache.length}, Sections: ${_sectionCache.length}, Subjects: ${_subjectCache.length})');
     } catch (e, stackTrace) {
@@ -206,77 +200,28 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    print('🔍 AppState: Loading TEACHERS by role (ignore department)');
-
-    _usersSubscription?.cancel();
-
     try {
       await _loadCaches();
 
-      final users = _userCache.values.where((u) => u.role == 'teacher').toList();
+      final uniqueUsers = _userCache.values.toSet();
+      final users = uniqueUsers.where((u) => u.role == 'teacher').toList();
       print('✅ AppState: Loaded ${users.length} teachers from cache');
-
       final teachers = users;
       print('✅ AppState: Found ${teachers.length} teachers');
-
       _departmentTeacherIds = teachers.map((t) => t.id).toList();
-
       _lecturers = await _convertUsersToLecturers(teachers);
       print('✅ AppState: Converted ${_lecturers.length} lecturers');
+
+      _rawSchedules = _scheduleCache.values.toList();
+      _rawLessons = _lessonCache.values.toList();
+      _processCachedSchedules();
+
+      await _loadLeaveRequests();
+      await _loadMakeupRequests();
+
+      _subjectNames = _subjectCache.values.map((s) => s.name).where((e) => e.isNotEmpty).toSet().toList();
+
       notifyListeners();
-
-      // Load related data (non-blocking)
-      _loadSchedules().catchError((e) {
-        print('❌ AppState: Error loading schedules: $e');
-      });
-      _loadLeaveRequests().catchError((e) {
-        print('❌ AppState: Error loading leave requests: $e');
-      });
-      _loadMakeupRequests().catchError((e) {
-        print('❌ AppState: Error loading makeup requests: $e');
-      });
-
-      _usersSubscription = UserService.getUsersByRoleStream('teacher')
-          .listen((updatedUsers) async {
-        try {
-          // [SỬA LỖI] Cập nhật cache với cả 2 key
-          for (var u in updatedUsers) {
-            _userCache[u.id] = u;
-            if (u.employeeId != null && u.employeeId!.isNotEmpty) {
-              _userCache[u.employeeId!] = u;
-            }
-          }
-
-          final updatedTeachers = updatedUsers;
-          _departmentTeacherIds = updatedTeachers.map((t) => t.id).toList();
-          _lecturers = await _convertUsersToLecturers(updatedTeachers);
-
-          // [SỬA LỖI] Gọi hàm xử lý lại schedule khi user thay đổi
-          _processCachedSchedules();
-
-        } catch (e) {
-          print('❌ AppState: Error in users stream listener: $e');
-        }
-      });
-
-      _subjectsSubscription?.cancel();
-      _subjectsSubscription = SubjectService.getSubjectsStream().listen((subjectModels) {
-        _subjectCache.addAll({for (var s in subjectModels) s.id: s});
-        _subjectNames = subjectModels.map((s) => s.name).where((e) => e.isNotEmpty).toSet().toList();
-
-        // [SỬA LỖI] Gọi hàm xử lý lại schedule khi subject thay đổi
-        _processCachedSchedules();
-      });
-
-      // [THÊM MỚI] Lắng nghe các stream tra cứu khác
-      ClassroomService.getClassroomsStream().listen((models) {
-        _classroomCache.addAll({for (var m in models) m.id: m});
-        _processCachedSchedules();
-      });
-      RoomService.getRoomsStream().listen((models) {
-        _roomCache.addAll({for (var m in models) m.id: m});
-        _processCachedSchedules();
-      });
 
     } catch (e) {
       print('❌ AppState: Error in loadDataFromFirebase: $e');
@@ -286,31 +231,80 @@ class AppState extends ChangeNotifier {
 
   Future<List<Lecturer>> _convertUsersToLecturers(List<Users> users) async {
     final lecturers = <Lecturer>[];
-
+    final allLessons = _lessonCache.values.toList();
     final allCourseSections = _sectionCache.values.toList();
-    final allSchedules = _scheduleCache.values.toList();
 
     for (final user in users) {
-      int hoursPlanned = 0;
       int hoursActual = 0;
+      int hoursPlanned = 0;
+      final docIdKey = user.id;
+      final employeeIdKey = user.employeeId;
+      String subjectName = user.specialization ?? '';
 
+      // 1. Tính giờ THỰC TẾ
       try {
-        final courseSections = allCourseSections.where((s) => s.teacherId == user.id || s.teacherId == user.employeeId).toList();
+        final lessonsTaught = allLessons.where((l) =>
+        (l.teacherId == docIdKey || l.teacherId == employeeIdKey) &&
+            l.status == 'completed'
+        ).toList();
 
-        for (final section in courseSections) {
-          final schedules = allSchedules.where((s) => s.courseSectionId == section.id).toList();
-
-          for (final schedule in schedules) {
-            final duration = schedule.endTime.difference(schedule.startTime);
-            hoursPlanned += duration.inHours;
-
-            if (schedule.status == ScheduleStatus.completed) {
-              hoursActual += duration.inHours;
+        for (final lesson in lessonsTaught) {
+          try {
+            final sParts = lesson.startTime.split(':');
+            final eParts = lesson.endTime.split(':');
+            if (sParts.length >= 2 && eParts.length >= 2) {
+              final start = DateTime(2000, 1, 1, int.parse(sParts[0]), int.parse(sParts[1]));
+              final end = DateTime(2000, 1, 1, int.parse(eParts[0]), int.parse(eParts[1]));
+              final duration = end.difference(start);
+              if (duration.inMinutes > 0) {
+                hoursActual += (duration.inMinutes / 60).round();
+              }
             }
-          }
+          } catch (e) { /* ignore parse error */ }
         }
       } catch (e) {
-        print('Error calculating hours for ${user.fullName}: $e');
+        print('Error calculating ACTUAL hours for ${user.fullName}: $e');
+      }
+
+      // 2. Tính giờ KẾ HOẠCH
+      try {
+        final sectionsTaught = allCourseSections.where((s) =>
+        s.teacherId == docIdKey || s.teacherId == employeeIdKey
+        ).toList();
+
+        print('Found ${sectionsTaught.length} sections for ${user.fullName}');
+
+        for (final section in sectionsTaught) {
+          final scheduleString = section.scheduleString;
+          final timeMatch = RegExp(r'(\d{1,2}:\d{2})-(\d{1,2}:\d{2})').firstMatch(scheduleString);
+
+          if (timeMatch != null) {
+            final startTime = timeMatch.group(1)!;
+            final endTime = timeMatch.group(2)!;
+
+            final sParts = startTime.split(':');
+            final eParts = endTime.split(':');
+
+            final start = DateTime(2000, 1, 1, int.parse(sParts[0]), int.parse(sParts[1]));
+            final end = DateTime(2000, 1, 1, int.parse(eParts[0]), int.parse(eParts[1]));
+            final duration = end.difference(start);
+
+            if (duration.inMinutes > 0) {
+              final sessionHours = (duration.inMinutes / 60).round();
+              hoursPlanned += sessionHours * 8; // Ghi đè 8 tuần
+            }
+          } else {
+            print('⚠️ AppState: RegExp failed to parse time from: $scheduleString');
+          }
+        }
+
+        if (sectionsTaught.isNotEmpty) {
+          final firstSubjectId = sectionsTaught.first.subjectId;
+          subjectName = _subjectCache[firstSubjectId]?.name ?? subjectName;
+        }
+
+      } catch (e) {
+        print('Error calculating PLANNED hours for ${user.fullName}: $e');
       }
 
       lecturers.add(Lecturer(
@@ -318,33 +312,35 @@ class AppState extends ChangeNotifier {
         email: user.email,
         phone: user.phoneNumber ?? '',
         title: user.academicRank ?? 'Giảng viên',
-        subject: user.specialization ?? '',
+        subject: subjectName,
         hoursPlanned: hoursPlanned,
         hoursActual: hoursActual,
       ));
     }
-
     return lecturers;
   }
 
-  // [THÊM MỚI] Hàm này chỉ xử lý, không lắng nghe stream
   void _processCachedSchedules() {
     print('🔄 AppState: Processing cached schedules...');
-    // --- Xử lý collection 'schedules' (từ _rawSchedules) ---
-    final nextSchedules = <ScheduleItem>[];
+    List<ScheduleItem> nextSchedules = [];
+
+    // --- Xử lý collection 'schedules' ---
     for (final schedule in _rawSchedules) {
       final sectionDetails = _sectionCache[schedule.courseSectionId];
-
-      String subjectName = '';
-      String className = '';
-      String roomName = '';
-      String teacherName = '';
+      String subjectName = 'Không rõ', className = 'Không rõ', roomName = 'Không rõ', teacherName = 'Không rõ';
+      String? classroomId;
+      int studentCount = 0;
+      int totalSessions = 8; // Ghi đè 8
 
       if (sectionDetails != null) {
-        // Tra cứu bằng ID tài liệu HOẶC employeeId
         teacherName = _userCache[sectionDetails.teacherId]?.fullName ?? 'Không rõ';
         subjectName = _subjectCache[sectionDetails.subjectId]?.name ?? 'Không rõ';
-        className = _classroomCache[sectionDetails.classroomId]?.name ?? 'Không rõ';
+
+        classroomId = sectionDetails.classroomId;
+        final classroom = _classroomCache[classroomId];
+        className = classroom?.name ?? 'Không rõ';
+        studentCount = classroom?.studentCount ?? 0;
+
         roomName = _roomCache[sectionDetails.roomId]?.name ?? 'Không rõ';
       } else {
         print('⚠️ AppState: Cannot find sectionDetails in cache for sectionId ${schedule.courseSectionId}');
@@ -356,27 +352,25 @@ class AppState extends ChangeNotifier {
         case ScheduleStatus.cancelled: status = SessionStatus.nghi; break;
         default: status = SessionStatus.chuaDay;
       }
-      final startHour = schedule.startTime.hour;
-      final endHour = schedule.endTime.hour;
-      final startMin = schedule.startTime.minute;
-      final endMin = schedule.endTime.minute;
-      final session = '$startHour:${startMin.toString().padLeft(2, '0')}-$endHour:${endMin.toString().padLeft(2, '0')}';
+      final session = '${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')}-${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}';
 
       nextSchedules.add(ScheduleItem(
-        lecturer: teacherName.isNotEmpty ? teacherName : 'Không rõ',
-        subject: subjectName.isNotEmpty ? subjectName : 'Không rõ',
-        className: className.isNotEmpty ? className : 'Không rõ',
+        lecturer: teacherName,
+        subject: subjectName,
+        className: className,
+        classroomId: classroomId,
         date: schedule.startTime,
         session: session,
-        room: roomName.isNotEmpty ? roomName : 'Không rõ',
+        room: roomName,
         status: status,
-        attendance: null,
+        attendanceList: null,
+        studentCount: studentCount,
+        totalSessions: totalSessions,
       ));
     }
-    _schedulesFromSchedules = nextSchedules;
 
-    // --- Xử lý collection 'lessons' (từ _rawLessons) ---
-    final lessonItems = <ScheduleItem>[];
+    List<ScheduleItem> lessonItems = [];
+    // --- Xử lý collection 'lessons' ---
     for (final l in _rawLessons) {
       DateTime start = l.date;
       DateTime end = l.date;
@@ -397,336 +391,263 @@ class AppState extends ChangeNotifier {
         case 'ongoing': status = SessionStatus.chuaDay; break;
         default: status = SessionStatus.chuaDay;
       }
-
       final session = '${start.hour}:${start.minute.toString().padLeft(2, '0')}-${end.hour}:${end.minute.toString().padLeft(2, '0')}';
-
-      // Tra cứu bằng ID tài liệu HOẶC employeeId
       String teacherName = _userCache[l.teacherId]?.fullName ?? 'Không rõ';
+
+      final classroom = _classroomCache[l.classroomId];
+      int studentCount = classroom?.studentCount ?? 0;
+      int totalSessions = 8; // Ghi đè 8
 
       lessonItems.add(ScheduleItem(
         lecturer: teacherName,
         subject: l.subject ?? '',
         className: l.className,
+        classroomId: l.classroomId,
         date: start,
         session: session,
         room: l.room ?? '',
         status: status,
-        attendance: null,
+        attendanceList: l.attendanceList,
+        studentCount: studentCount,
+        totalSessions: totalSessions,
       ));
     }
-    _schedulesFromLessons = lessonItems;
 
-    _rebuildSchedules(); // <-- Hàm này sẽ gọi notifyListeners()
+    _schedules = [...nextSchedules, ...lessonItems];
+    _rebuildSchedules();
   }
 
-
-  // [SỬA ĐỔI] Hàm này giờ chỉ lắng nghe, lưu cache thô, và gọi hàm xử lý
-  Future<void> _loadSchedules() async {
-    _schedulesSubscription?.cancel();
-    _lessonsSubscription?.cancel();
-
-    if (loadAllDataForDebug) {
-      try {
-        _schedulesSubscription = ScheduleService.getSchedulesStream().listen((firestoreSchedules) {
-          print('🔄 AppState: Received ${firestoreSchedules.length} schedules update');
-          _rawSchedules = firestoreSchedules; // Cập nhật cache thô
-          _scheduleCache.addAll({for (var s in firestoreSchedules) s.id: s});
-          _processCachedSchedules(); // Xây dựng lại danh sách
-        });
-
-        _lessonsSubscription = LessonService.getLessonsStream().listen((lessons) {
-          print('🔄 AppState: Received ${lessons.length} lessons update');
-          _rawLessons = lessons; // Cập nhật cache thô
-          _lessonCache.addAll({for (var l in lessons) l.id: l});
-          _processCachedSchedules(); // Xây dựng lại danh sách
-        });
-      } catch (e) {
-        print('Error loading all schedules (debug): $e');
-      }
-      return;
-    }
-
-    print('⚠️ AppState: Logic "non-debug" cho _loadSchedules() đã bị vô hiệu hóa.');
-  }
-
-  // [SỬA ĐỔI] Sửa lại hàm này để dùng _processCachedSchedules
   Future<void> _loadLeaveRequests() async {
-    _leaveRequestsSubscription?.cancel();
+    final allLeaveRequests = <LeaveRequest>[];
+    for (final firestoreRequest in _leaveRequestCache.values) {
+      final teacher = _userCache[firestoreRequest.teacherId];
+      final teacherName = teacher?.fullName ?? 'Không rõ';
 
-    if (loadAllDataForDebug) {
-      _leaveRequestsSubscription = LeaveRequestService
-          .getLeaveRequestsStream()
-          .listen((firestoreRequests) {
-        print('🔄 AppState: Received ${firestoreRequests.length} leave requests');
-        _leaveRequestCache.addAll({for (var r in firestoreRequests) r.id: r});
+      final schedule = (firestoreRequest.scheduleId != null && firestoreRequest.scheduleId!.isNotEmpty)
+          ? _scheduleCache[firestoreRequest.scheduleId!]
+          : null;
 
-        final allLeaveRequests = <LeaveRequest>[];
-        for (final firestoreRequest in firestoreRequests) {
+      Lessons? lesson;
+      if (schedule == null && (firestoreRequest.lessonId != null && firestoreRequest.lessonId!.isNotEmpty)) {
+        lesson = _lessonCache[firestoreRequest.lessonId!];
+      }
 
-          final teacher = _userCache[firestoreRequest.teacherId];
-          final teacherName = teacher?.fullName ?? '';
+      final section = schedule != null
+          ? _sectionCache[schedule.courseSectionId]
+          : null;
 
-          final schedule = (firestoreRequest.scheduleId != null && firestoreRequest.scheduleId!.isNotEmpty)
-              ? _scheduleCache[firestoreRequest.scheduleId!]
-              : null;
+      String subjectName = '';
+      String className = '';
+      String roomName = '';
 
-          Lessons? lesson;
-          if (schedule == null && (firestoreRequest.lessonId != null && firestoreRequest.lessonId!.isNotEmpty)) {
-            lesson = _lessonCache[firestoreRequest.lessonId!];
-          }
+      if (section != null) {
+        subjectName = _subjectCache[section.subjectId]?.name ?? '';
+        className = _classroomCache[section.classroomId]?.name ?? '';
+        roomName = _roomCache[section.roomId]?.name ?? '';
+      } else if (lesson != null) {
+        subjectName = lesson.subject ?? '';
+        className = lesson.className;
+        roomName = lesson.room ?? '';
+      }
 
-          final section = schedule != null
-              ? _sectionCache[schedule.courseSectionId]
-              : null;
-
-          String subjectName = '';
-          String className = '';
-          String roomName = '';
-
-          if (section != null) {
-            subjectName = _subjectCache[section.subjectId]?.name ?? '';
-            className = _classroomCache[section.classroomId]?.name ?? '';
-            roomName = _roomCache[section.roomId]?.name ?? '';
-          } else if (lesson != null) {
-            subjectName = lesson.subject ?? '';
-            className = lesson.className;
-            roomName = lesson.room ?? '';
-          }
-
-          String sessionString;
-          DateTime dateValue;
-          if (schedule != null) {
-            final startHour = schedule.startTime.hour;
-            final endHour = schedule.endTime.hour;
-            final startMin = schedule.startTime.minute;
-            final endMin = schedule.endTime.minute;
-            sessionString = '$startHour:${startMin.toString().padLeft(2, '0')}-$endHour:${endMin.toString().padLeft(2, '0')}';
-            dateValue = schedule.startTime;
-          } else if (lesson != null) {
-            final sParts = lesson.startTime.split(':');
-            final eParts = lesson.endTime.split(':');
-            sessionString = '${sParts.first}:${(sParts.length>1?sParts[1].padLeft(2,'0'):'00')}-${eParts.first}:${(eParts.length>1?eParts[1].padLeft(2,'0'):'00')}';
-            dateValue = lesson.date;
-          } else {
-            continue;
-          }
-          RequestStatus status;
-          switch (firestoreRequest.status) {
-            case LeaveRequestStatus.approved: status = RequestStatus.approved; break;
-            case LeaveRequestStatus.rejected: status = RequestStatus.rejected; break;
-            default: status = RequestStatus.pending;
-          }
-          allLeaveRequests.add(LeaveRequest(
-            lecturer: teacherName,
-            subject: subjectName,
-            className: className,
-            room: roomName,
-            date: dateValue,
-            session: sessionString,
-            reason: firestoreRequest.reason,
-            status: status,
-            submittedAt: firestoreRequest.createdAt,
-            approvedBy: firestoreRequest.approverId != null ? 'Trưởng Bộ môn' : null,
-            rejectedBy: status == RequestStatus.rejected ? 'Trưởng Bộ môn' : null,
-            rejectionReason: firestoreRequest.approverNotes,
-            approvedDate: firestoreRequest.approvedDate,
-          ));
-        }
-        _leaveRequests = allLeaveRequests;
-        // [SỬA LỖI] Phải gọi notifyListeners() ở đây vì hàm này không gọi _rebuildSchedules
-        notifyListeners();
-      });
-      return;
+      String sessionString;
+      DateTime dateValue;
+      if (schedule != null) {
+        sessionString = '${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')}-${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}';
+        dateValue = schedule.startTime;
+      } else if (lesson != null) {
+        final sParts = lesson.startTime.split(':');
+        final eParts = lesson.endTime.split(':');
+        sessionString = '${sParts.first}:${(sParts.length>1?sParts[1].padLeft(2,'0'):'00')}-${eParts.first}:${(eParts.length>1?eParts[1].padLeft(2,'0'):'00')}';
+        dateValue = lesson.date;
+      } else {
+        continue;
+      }
+      RequestStatus status;
+      switch (firestoreRequest.status) {
+        case LeaveRequestStatus.approved: status = RequestStatus.approved; break;
+        case LeaveRequestStatus.rejected: status = RequestStatus.rejected; break;
+        default: status = RequestStatus.pending;
+      }
+      allLeaveRequests.add(LeaveRequest(
+        id: firestoreRequest.id,
+        lecturer: teacherName,
+        subject: subjectName,
+        className: className,
+        room: roomName,
+        date: dateValue,
+        session: sessionString,
+        reason: firestoreRequest.reason,
+        status: status,
+        submittedAt: firestoreRequest.createdAt,
+        // [SỬA LỖI] Dùng hàm helper mới
+        approvedBy: firestoreRequest.approverId != null ? _getApproverName(firestoreRequest.approverId) : null,
+        rejectedBy: status == RequestStatus.rejected ? _getApproverName(firestoreRequest.approverId) : null,
+        rejectionReason: firestoreRequest.approverNotes,
+        approvedDate: firestoreRequest.approvedDate,
+      ));
     }
-
-    print('⚠️ AppState: Logic "non-debug" cho _loadLeaveRequests() đã bị vô hiệu hóa.');
+    _leaveRequests = allLeaveRequests;
   }
 
-  // [SỬA ĐỔI] Sửa lại hàm này để dùng _processCachedSchedules
   Future<void> _loadMakeupRequests() async {
-    _makeupRequestsSubscription?.cancel();
+    final allMakeups = <MakeupRegistration>[];
+    for (final firestoreMakeup in _makeupRequestsCache.values) {
+      final teacher = _userCache[firestoreMakeup.teacherId];
+      final teacherName = teacher?.fullName ?? 'Không rõ';
 
-    if (loadAllDataForDebug) {
-      _makeupRequestsSubscription = MakeupRequestService
-          .getMakeupRequestsStream()
-          .listen((firestoreMakeups) async {
-        print('🔄 AppState: Received ${firestoreMakeups.length} makeup requests');
+      // [SỬA LỖI] Dùng originalScheduleId
+      final originalSchedule = (firestoreMakeup.originalScheduleId != null && firestoreMakeup.originalScheduleId!.isNotEmpty)
+          ? _scheduleCache[firestoreMakeup.originalScheduleId!]
+          : null;
 
-        final allMakeups = <MakeupRegistration>[];
-        for (final firestoreMakeup in firestoreMakeups) {
+      Lessons? originalLesson;
+      // Tạm thời bỏ qua logic lesson
 
-          final teacher = _userCache[firestoreMakeup.teacherId];
-          final teacherName = teacher?.fullName ?? '';
+      if (originalSchedule == null && originalLesson == null) continue;
 
-          final leaveRequest = _leaveRequestCache[firestoreMakeup.leaveRequestId];
-          if (leaveRequest == null) continue;
+      String subjectName = '';
+      String className = '';
+      String roomName = '';
+      String originalSession;
+      DateTime originalDate;
 
-          final originalSchedule = (leaveRequest.scheduleId != null && leaveRequest.scheduleId!.isNotEmpty)
-              ? _scheduleCache[leaveRequest.scheduleId!]
-              : null;
+      if (originalSchedule != null) {
+        final section = _sectionCache[originalSchedule.courseSectionId];
+        if (section == null) continue;
+        subjectName = _subjectCache[section.subjectId]?.name ?? '';
+        className = _classroomCache[section.classroomId]?.name ?? '';
+        originalSession = '${originalSchedule.startTime.hour}:${originalSchedule.startTime.minute.toString().padLeft(2, '0')}-${originalSchedule.endTime.hour}:${originalSchedule.endTime.minute.toString().padLeft(2, '0')}';
+        originalDate = originalSchedule.startTime;
+      } else if (originalLesson != null) {
+        // (Logic này tạm thời không chạy)
+        subjectName = originalLesson.subject ?? '';
+        className = originalLesson.className;
+        final sParts = originalLesson.startTime.split(':');
+        final eParts = originalLesson.endTime.split(':');
+        originalSession = '${sParts.first}:${(sParts.length>1?sParts[1].padLeft(2,'0'):'00')}-${eParts.first}:${(eParts.length>1?eParts[1].padLeft(2,'0'):'00')}';
+        originalDate = originalLesson.date;
+      } else {
+        continue;
+      }
 
-          Lessons? originalLesson;
-          if (originalSchedule == null && (leaveRequest.lessonId != null && leaveRequest.lessonId!.isNotEmpty)) {
-            originalLesson = _lessonCache[leaveRequest.lessonId!];
-          }
-          if (originalSchedule == null && originalLesson == null) continue;
+      roomName = _roomCache[firestoreMakeup.proposedRoomId]?.name ?? '';
 
-          String subjectName = '';
-          String className = '';
-          String roomName = '';
-          String originalSession;
-          DateTime originalDate;
-
-          if (originalSchedule != null) {
-            final section = _sectionCache[originalSchedule.courseSectionId];
-            if (section == null) continue;
-
-            subjectName = _subjectCache[section.subjectId]?.name ?? '';
-            className = _classroomCache[section.classroomId]?.name ?? '';
-
-            final originalStartHour = originalSchedule.startTime.hour;
-            final originalEndHour = originalSchedule.endTime.hour;
-            final originalStartMin = originalSchedule.startTime.minute;
-            final originalEndMin = originalSchedule.endTime.minute;
-            originalSession = '$originalStartHour:${originalStartMin.toString().padLeft(2, '0')}-$originalEndHour:${originalEndMin.toString().padLeft(2, '0')}';
-            originalDate = originalSchedule.startTime;
-          } else if (originalLesson != null) {
-            subjectName = originalLesson.subject ?? '';
-            className = originalLesson.className;
-
-            final sParts = originalLesson.startTime.split(':');
-            final eParts = originalLesson.endTime.split(':');
-            originalSession = '${sParts.first}:${(sParts.length>1?sParts[1].padLeft(2,'0'):'00')}-${eParts.first}:${(eParts.length>1?eParts[1].padLeft(2,'0'):'00')}';
-            originalDate = originalLesson.date;
-          } else {
-            continue;
-          }
-
-          roomName = _roomCache[firestoreMakeup.proposedRoomId]?.name ?? '';
-
-          final makeupStartHour = firestoreMakeup.proposedStartTime.hour;
-          final makeupEndHour = firestoreMakeup.proposedEndTime.hour;
-          final makeupStartMin = firestoreMakeup.proposedStartTime.minute;
-          final makeupEndMin = firestoreMakeup.proposedEndTime.minute;
-          final makeupSession = '$makeupStartHour:${makeupStartMin.toString().padLeft(2, '0')}-$makeupEndHour:${makeupEndMin.toString().padLeft(2, '0')}';
-          RequestStatus status;
-          switch (firestoreMakeup.status) {
-            case MakeupRequestStatus.approved: status = RequestStatus.approved; break;
-            case MakeupRequestStatus.rejected: status = RequestStatus.rejected; break;
-            default: status = RequestStatus.pending;
-          }
-          allMakeups.add(MakeupRegistration(
-            lecturer: teacherName,
-            subject: subjectName,
-            className: className,
-            originalDate: originalDate,
-            originalSession: originalSession,
-            makeupDate: firestoreMakeup.proposedStartTime,
-            makeupSession: makeupSession,
-            makeupRoom: roomName,
-            status: status,
-            approvedBy: firestoreMakeup.approverId != null ? 'Trưởng Bộ môn' : null,
-            rejectedBy: status == RequestStatus.rejected ? 'Trưởng Bộ môn' : null,
-            rejectionReason: null,
-            approvedDate: null,
-            submittedAt: firestoreMakeup.createdAt,
-          ));
-        }
-        _makeups = allMakeups;
-        // [SỬA LỖI] Phải gọi notifyListeners() ở đây
-        notifyListeners();
-      });
-      return;
+      final makeupSession = '${firestoreMakeup.proposedStartTime.hour}:${firestoreMakeup.proposedStartTime.minute.toString().padLeft(2, '0')}-${firestoreMakeup.proposedEndTime.hour}:${firestoreMakeup.proposedEndTime.minute.toString().padLeft(2, '0')}';
+      RequestStatus status;
+      switch (firestoreMakeup.status) {
+        case MakeupRequestStatus.approved: status = RequestStatus.approved; break;
+        case MakeupRequestStatus.rejected: status = RequestStatus.rejected; break;
+        default: status = RequestStatus.pending;
+      }
+      allMakeups.add(MakeupRegistration(
+        id: firestoreMakeup.id,
+        lecturer: teacherName,
+        subject: subjectName,
+        className: className,
+        originalDate: originalDate,
+        originalSession: originalSession,
+        makeupDate: firestoreMakeup.proposedStartTime,
+        makeupSession: makeupSession,
+        makeupRoom: roomName,
+        status: status,
+        // [SỬA LỖI] Dùng hàm helper mới
+        approvedBy: firestoreMakeup.approverId != null ? _getApproverName(firestoreMakeup.approverId) : null,
+        rejectedBy: status == RequestStatus.rejected ? _getApproverName(firestoreMakeup.approverId) : null,
+        rejectionReason: null, // Model của bạn không có trường approverNotes
+        approvedDate: null, // Model của bạn không có trường approvedDate
+        submittedAt: firestoreMakeup.createdAt,
+      ));
     }
-
-    print('⚠️ AppState: Logic "non-debug" cho _loadMakeupRequests() đã bị vô hiệu hóa.');
+    _makeups = allMakeups;
   }
 
-  // --- Các hàm phê duyệt (Giữ nguyên) ---
+  // --- Các hàm phê duyệt (Đã sửa) ---
+
+  static const String HOD_APPROVER_ID = 'department_head';
 
   Future<void> approveLeave(int index) async {
-    if (index >= 0 && index < _leaveRequests.length) {
-      final leaveRequest = _leaveRequests[index];
-      _leaveRequests[index] = LeaveRequest(
-        lecturer: leaveRequest.lecturer,
-        subject: leaveRequest.subject,
-        className: leaveRequest.className,
-        room: leaveRequest.room,
-        date: leaveRequest.date,
-        session: leaveRequest.session,
-        reason: leaveRequest.reason,
-        status: RequestStatus.approved,
-        submittedAt: leaveRequest.submittedAt,
-        approvedBy: 'Trưởng Bộ môn',
-        approvedDate: DateTime.now(),
-      );
-      notifyListeners();
-      // TODO: Update Firestore document
+    if (index < 0 || index >= _leaveRequests.length) return;
+    final request = _leaveRequests[index];
+    print('Approving leave request: ${request.id}');
+
+    final dataToUpdate = {
+      'status': 'approved',
+      'approverId': HOD_APPROVER_ID,
+      'approverNotes': 'Đã duyệt bởi Trưởng Bộ môn',
+      'approvedDate': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await LeaveRequestService.updateLeaveRequest(request.id, dataToUpdate);
+      print('✅ Successfully approved leave ${request.id}');
+      await loadDataFromFirebase(); // Tải lại
+    } catch (e) {
+      print('❌ Error approving leave request: $e');
     }
   }
 
   Future<void> rejectLeave(int index, String rejectionReason) async {
-    if (index >= 0 && index < _leaveRequests.length) {
-      final leaveRequest = _leaveRequests[index];
-      _leaveRequests[index] = LeaveRequest(
-        lecturer: leaveRequest.lecturer,
-        subject: leaveRequest.subject,
-        className: leaveRequest.className,
-        room: leaveRequest.room,
-        date: leaveRequest.date,
-        session: leaveRequest.session,
-        reason: leaveRequest.reason,
-        status: RequestStatus.rejected,
-        submittedAt: leaveRequest.submittedAt,
-        rejectedBy: 'Trưởng Bộ môn',
-        rejectionReason: rejectionReason,
-      );
-      notifyListeners();
-      // TODO: Update Firestore document
+    if (index < 0 || index >= _leaveRequests.length) return;
+    final request = _leaveRequests[index];
+    print('Rejecting leave request: ${request.id}');
+
+    final dataToUpdate = {
+      'status': 'rejected',
+      'approverId': HOD_APPROVER_ID,
+      'approverNotes': rejectionReason,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await LeaveRequestService.updateLeaveRequest(request.id, dataToUpdate);
+      print('✅ Successfully rejected leave ${request.id}');
+      await loadDataFromFirebase(); // Tải lại
+    } catch (e) {
+      print('❌ Error rejecting leave request: $e');
     }
   }
 
   Future<void> approveMakeup(int index) async {
-    if (index >= 0 && index < _makeups.length) {
-      final makeup = _makeups[index];
-      _makeups[index] = MakeupRegistration(
-        lecturer: makeup.lecturer,
-        subject: makeup.subject,
-        className: makeup.className,
-        originalDate: makeup.originalDate,
-        originalSession: makeup.originalSession,
-        makeupDate: makeup.makeupDate,
-        makeupSession: makeup.makeupSession,
-        makeupRoom: makeup.makeupRoom,
-        status: RequestStatus.approved,
-        approvedBy: 'Trưởng Bộ môn',
-        approvedDate: DateTime.now(),
-        submittedAt: makeup.submittedAt,
-      );
-      notifyListeners();
-      // TODO: Update Firestore document
+    if (index < 0 || index >= _makeups.length) return;
+    final request = _makeups[index];
+    print('Approving makeup request: ${request.id}');
+
+    final dataToUpdate = {
+      'status': 'approved',
+      'approverId': HOD_APPROVER_ID,
+      'approverNotes': 'Đã duyệt',
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await MakeupRequestService.updateMakeupRequest(request.id, dataToUpdate);
+      print('✅ Successfully approved makeup ${request.id}');
+      await loadDataFromFirebase(); // Tải lại
+    } catch (e) {
+      print('❌ Error approving makeup request: $e');
     }
   }
 
   Future<void> rejectMakeup(int index, String rejectionReason) async {
-    if (index >= 0 && index < _makeups.length) {
-      final makeup = _makeups[index];
-      _makeups[index] = MakeupRegistration(
-        lecturer: makeup.lecturer,
-        subject: makeup.subject,
-        className: makeup.className,
-        originalDate: makeup.originalDate,
-        originalSession: makeup.originalSession,
-        makeupDate: makeup.makeupDate,
-        makeupSession: makeup.makeupSession,
-        makeupRoom: makeup.makeupRoom,
-        status: RequestStatus.rejected,
-        rejectedBy: 'Trưởng Bộ môn',
-        rejectionReason: rejectionReason,
-        submittedAt: makeup.submittedAt,
-      );
-      notifyListeners();
-      // TODO: Update Firestore document
+    if (index < 0 || index >= _makeups.length) return;
+    final request = _makeups[index];
+    print('Rejecting makeup request: ${request.id}');
+
+    final dataToUpdate = {
+      'status': 'rejected',
+      'approverId': HOD_APPROVER_ID,
+      'approverNotes': rejectionReason,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await MakeupRequestService.updateMakeupRequest(request.id, dataToUpdate);
+      print('✅ Successfully rejected makeup ${request.id}');
+      await loadDataFromFirebase(); // Tải lại
+    } catch (e) {
+      print('❌ Error rejecting makeup request: $e');
     }
   }
 
@@ -742,22 +663,17 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
   }
+  // --- [KẾT THÚC] Các hàm phê duyệt ---
 
   @override
   void dispose() {
-    _usersSubscription?.cancel();
-    _leaveRequestsSubscription?.cancel();
-    _makeupRequestsSubscription?.cancel();
-    _schedulesSubscription?.cancel();
-    _subjectsSubscription?.cancel();
-    _lessonsSubscription?.cancel();
     super.dispose();
   }
 
-  // Combine schedule sources and notify
   void _rebuildSchedules() {
-    _schedules = [..._schedulesFromSchedules, ..._schedulesFromLessons];
-    print('🔄 AppState: Rebuilt schedules. Total: ${_schedules.length} (From Schedules: ${_schedulesFromSchedules.length}, From Lessons: ${_schedulesFromLessons.length})');
+    print('🔄 AppState: Rebuilt schedules list. Total: ${_schedules.length}');
+    // Không cần tính toán thống kê ở đây
+    _lecturers = List.from(_lecturers);
     notifyListeners();
   }
 }

@@ -16,6 +16,7 @@ class Lessons {
   final String endTime;   // e.g. "09:30"
   final DateTime createdAt;
   final String? teacherId; // ID của giảng viên
+  final List<String>? attendanceList; // [THÊM MỚI]
 
   Lessons({
     required this.id,
@@ -33,6 +34,7 @@ class Lessons {
     required this.endTime,
     required this.createdAt,
     this.teacherId,
+    this.attendanceList, // [THÊM MỚI]
   });
 
   factory Lessons.fromJson(String id, Map<String, dynamic> json) {
@@ -60,8 +62,10 @@ class Lessons {
       endTime: json['endTime'] as String? ?? '',
       createdAt: parseTs(json['createdAt']),
       teacherId: json['teacherId'] as String?,
+      // [THÊM MỚI] Đọc danh sách điểm danh
+      attendanceList: json['attendanceList'] != null
+          ? List<String>.from(json['attendanceList'] as List)
+          : null,
     );
   }
 }
-
-

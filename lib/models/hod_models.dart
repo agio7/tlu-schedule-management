@@ -1,4 +1,4 @@
-// Models for Department Head (Trưởng bộ môn) Dashboard
+import 'package:flutter/material.dart';
 
 // Enums
 enum SessionStatus {
@@ -45,10 +45,31 @@ class Lecturer {
     required this.hoursPlanned,
     required this.hoursActual,
   });
+
+  Lecturer copyWith({
+    String? name,
+    String? email,
+    String? phone,
+    String? title,
+    String? subject,
+    int? hoursPlanned,
+    int? hoursActual,
+  }) {
+    return Lecturer(
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      title: title ?? this.title,
+      subject: subject ?? this.subject,
+      hoursPlanned: hoursPlanned ?? this.hoursPlanned,
+      hoursActual: hoursActual ?? this.hoursActual,
+    );
+  }
 }
 
-// Leave Request Model (for UI)
+// [SỬA LỖI] Đã thêm 'id'
 class LeaveRequest {
+  final String id; // <-- ĐÃ THÊM
   final String lecturer;
   final String subject;
   final String className;
@@ -64,6 +85,7 @@ class LeaveRequest {
   final DateTime? approvedDate;
 
   LeaveRequest({
+    required this.id, // <-- ĐÃ THÊM
     required this.lecturer,
     required this.subject,
     required this.className,
@@ -80,8 +102,9 @@ class LeaveRequest {
   });
 }
 
-// Makeup Registration Model (for UI)
+// [SỬA LỖI] Đã thêm 'id'
 class MakeupRegistration {
+  final String id; // <-- ĐÃ THÊM
   final String lecturer;
   final String subject;
   final String className;
@@ -98,6 +121,7 @@ class MakeupRegistration {
   final DateTime submittedAt;
 
   MakeupRegistration({
+    required this.id, // <-- ĐÃ THÊM
     required this.lecturer,
     required this.originalDate,
     required this.originalSession,
@@ -115,26 +139,32 @@ class MakeupRegistration {
   }) : submittedAt = submittedAt ?? DateTime.now();
 }
 
-// Schedule Item Model (for UI)
+// [SỬA LỖI] Đã thêm 'totalSessions'
 class ScheduleItem {
   final String lecturer;
   final String subject;
   final String className;
+  final String? classroomId;
   final DateTime date;
   final String session;
   final String room;
   final SessionStatus status;
-  final String? attendance;
+  final List<String>? attendanceList;
+  final int studentCount;
+  final int totalSessions; // <-- ĐÃ THÊM
 
   ScheduleItem({
     required this.lecturer,
     required this.subject,
     required this.className,
+    this.classroomId,
     required this.date,
     required this.session,
     required this.room,
     required this.status,
-    this.attendance,
+    this.attendanceList,
+    required this.studentCount,
+    required this.totalSessions, // <-- ĐÃ THÊM
   });
 }
 
@@ -159,4 +189,3 @@ class AlertItem {
 String dmy(DateTime date) {
   return '${date.day}/${date.month}/${date.year}';
 }
-

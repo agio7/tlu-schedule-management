@@ -8,27 +8,33 @@ enum MakeupRequestStatus {
 
 class MakeupRequests {
   final String id;
-  final String leaveRequestId;
   final String teacherId;
-  final DateTime proposedStartTime;
-  final DateTime proposedEndTime;
-  final String proposedRoomId;
-  final MakeupRequestStatus status;
   final String? approverId;
+  final String? originalScheduleId; // <-- TRƯỜNG BỊ THIẾU
+  final String reason;
+  final String proposedRoomId; // Giả sử bạn có trường này
+  final DateTime proposedStartTime; // Giả sử bạn có trường này
+  final DateTime proposedEndTime; // Giả sử bạn có trường này
+  final MakeupRequestStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // [SỬA LỖI] Thêm leaveRequestId (dùng trong provider)
+  final String leaveRequestId;
+
   MakeupRequests({
     required this.id,
-    required this.leaveRequestId,
     required this.teacherId,
+    this.approverId,
+    this.originalScheduleId,
+    required this.reason,
+    required this.proposedRoomId,
     required this.proposedStartTime,
     required this.proposedEndTime,
-    required this.proposedRoomId,
     required this.status,
-    this.approverId,
     required this.createdAt,
     required this.updatedAt,
+    required this.leaveRequestId, // Thêm vào constructor
   });
 
   factory MakeupRequests.fromJson(String id, Map<String, dynamic> json) {
@@ -44,60 +50,41 @@ class MakeupRequests {
 
     return MakeupRequests(
       id: id,
-      leaveRequestId: json['leaveRequestId'] as String? ?? '',
       teacherId: json['teacherId'] as String? ?? '',
-      proposedStartTime: parseTimestamp(json['proposedStartTime']),
-      proposedEndTime: parseTimestamp(json['proposedEndTime']),
+      approverId: json['approverId'] as String?,
+      originalScheduleId: json['originalScheduleId'] as String?, // <-- ĐÃ THÊM
+      reason: json['reason'] as String? ?? '',
+
+      // [SỬA LỖI] Giả sử tên trường trong Firebase
       proposedRoomId: json['proposedRoomId'] as String? ?? '',
+      proposedStartTime: parseTimestamp(json['requestedTime'] ?? json['proposedStartTime']), // Dùng requestedTime
+      proposedEndTime: parseTimestamp(json['requestedTime'] ?? json['proposedEndTime']), // Cần endTime
+
       status: MakeupRequestStatus.values.firstWhere(
-        (e) => e.toString() == 'MakeupRequestStatus.${json['status']}',
+            (e) => e.toString() == 'MakeupRequestStatus.${json['status']}',
         orElse: () => MakeupRequestStatus.pending,
       ),
-      approverId: json['approverId'] as String?,
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
+
+      // [SỬA LỖI] Đọc 'leaveRequestId' (nếu có)
+      leaveRequestId: json['leaveRequestId'] as String? ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'leaveRequestId': leaveRequestId,
       'teacherId': teacherId,
+      'approverId': approverId,
+      'originalScheduleId': originalScheduleId,
+      'reason': reason,
+      'proposedRoomId': proposedRoomId,
       'proposedStartTime': Timestamp.fromDate(proposedStartTime),
       'proposedEndTime': Timestamp.fromDate(proposedEndTime),
-      'proposedRoomId': proposedRoomId,
       'status': status.toString().split('.').last,
-      'approverId': approverId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'leaveRequestId': leaveRequestId,
     };
   }
-
-  MakeupRequests copyWith({
-    String? id,
-    String? leaveRequestId,
-    String? teacherId,
-    DateTime? proposedStartTime,
-    DateTime? proposedEndTime,
-    String? proposedRoomId,
-    MakeupRequestStatus? status,
-    String? approverId,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return MakeupRequests(
-      id: id ?? this.id,
-      leaveRequestId: leaveRequestId ?? this.leaveRequestId,
-      teacherId: teacherId ?? this.teacherId,
-      proposedStartTime: proposedStartTime ?? this.proposedStartTime,
-      proposedEndTime: proposedEndTime ?? this.proposedEndTime,
-      proposedRoomId: proposedRoomId ?? this.proposedRoomId,
-      status: status ?? this.status,
-      approverId: approverId ?? this.approverId,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 }
-
-

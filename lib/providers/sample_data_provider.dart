@@ -48,6 +48,7 @@ class SampleDataProvider {
   static List<LeaveRequest> getSampleLeaveRequests() {
     return [
       LeaveRequest(
+        id: 'sample_leave_1', // [SỬA LỖI] Thêm ID
         lecturer: 'Nguyễn Văn A',
         subject: 'Lập trình Python',
         className: 'CNTTER01',
@@ -59,6 +60,7 @@ class SampleDataProvider {
         submittedAt: DateTime.now().subtract(const Duration(days: 1)),
       ),
       LeaveRequest(
+        id: 'sample_leave_2', // [SỬA LỖI] Thêm ID
         lecturer: 'Trần Thị B',
         subject: 'Cấu trúc dữ liệu',
         className: 'CNTTER02',
@@ -72,6 +74,7 @@ class SampleDataProvider {
         approvedDate: DateTime.now().subtract(const Duration(days: 1)),
       ),
       LeaveRequest(
+        id: 'sample_leave_3', // [SỬA LỖI] Thêm ID
         lecturer: 'Lê Văn C',
         subject: 'Hệ điều hành',
         className: 'CNTTER03',
@@ -91,6 +94,7 @@ class SampleDataProvider {
   static List<MakeupRegistration> getSampleMakeupRequests() {
     return [
       MakeupRegistration(
+        id: 'sample_makeup_1', // [SỬA LỖI] Thêm ID
         lecturer: 'Nguyễn Văn A',
         subject: 'Lập trình Python',
         className: 'CNTTER01',
@@ -103,6 +107,7 @@ class SampleDataProvider {
         submittedAt: DateTime.now().subtract(const Duration(days: 1)),
       ),
       MakeupRegistration(
+        id: 'sample_makeup_2', // [SỬA LỖI] Thêm ID
         lecturer: 'Trần Thị B',
         subject: 'Cấu trúc dữ liệu',
         className: 'CNTTER02',
@@ -117,6 +122,7 @@ class SampleDataProvider {
         submittedAt: DateTime.now().subtract(const Duration(days: 4)),
       ),
       MakeupRegistration(
+        id: 'sample_makeup_3', // [SỬA LỖI] Thêm ID
         lecturer: 'Lê Văn C',
         subject: 'Hệ điều hành',
         className: 'CNTTER03',
@@ -144,7 +150,10 @@ class SampleDataProvider {
         session: 'Sáng (8:00-11:00)',
         room: 'P301',
         status: SessionStatus.daDay,
-        attendance: '28/30',
+        // [SỬA LỖI] Cung cấp các trường mới
+        attendanceList: List.generate(28, (i) => 'sv$i'), // 28 sinh viên
+        studentCount: 30, // Sĩ số 30
+        totalSessions: 8, // 8 tuần
       ),
       ScheduleItem(
         lecturer: 'Trần Thị B',
@@ -154,7 +163,10 @@ class SampleDataProvider {
         session: 'Chiều (13:00-16:00)',
         room: 'P302',
         status: SessionStatus.daDay,
-        attendance: '30/30',
+        // [SỬA LỖI] Cung cấp các trường mới
+        attendanceList: List.generate(30, (i) => 'sv$i'), // 30 sinh viên
+        studentCount: 30, // Sĩ số 30
+        totalSessions: 8, // 8 tuần
       ),
       ScheduleItem(
         lecturer: 'Nguyễn Văn A',
@@ -164,6 +176,8 @@ class SampleDataProvider {
         session: 'Sáng (8:00-11:00)',
         room: 'P301',
         status: SessionStatus.chuaDay,
+        studentCount: 30, // [SỬA LỖI] Thêm sĩ số
+        totalSessions: 8, // 8 tuần
       ),
       ScheduleItem(
         lecturer: 'Lê Văn C',
@@ -173,7 +187,10 @@ class SampleDataProvider {
         session: 'Chiều (13:00-16:00)',
         room: 'P303',
         status: SessionStatus.daDay,
-        attendance: '29/30',
+        // [SỬA LỖI] Cung cấp các trường mới
+        attendanceList: List.generate(29, (i) => 'sv$i'), // 29 sinh viên
+        studentCount: 30, // Sĩ số 30
+        totalSessions: 8, // 8 tuần
       ),
       ScheduleItem(
         lecturer: 'Phạm Thị D',
@@ -183,6 +200,8 @@ class SampleDataProvider {
         session: 'Sáng (8:00-11:00)',
         room: 'P304',
         status: SessionStatus.chuaDay,
+        studentCount: 30, // [SỬA LỖI] Thêm sĩ số
+        totalSessions: 8, // 8 tuần
       ),
       ScheduleItem(
         lecturer: 'Trần Thị B',
@@ -192,6 +211,8 @@ class SampleDataProvider {
         session: 'Chiều (13:00-16:00)',
         room: 'P302',
         status: SessionStatus.chuaDay,
+        studentCount: 30, // [SỬA LỖI] Thêm sĩ số
+        totalSessions: 8, // 8 tuần
       ),
     ];
   }
@@ -234,4 +255,3 @@ class SampleDataProvider {
     };
   }
 }
-

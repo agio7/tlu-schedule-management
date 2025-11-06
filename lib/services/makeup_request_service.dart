@@ -1,7 +1,10 @@
+// [DÁN TOÀN BỘ CODE NÀY VÀO: lib/services/makeup_request_service.dart]
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/makeup_requests.dart';
+import '../models/makeup_requests.dart'; // Dùng tên file model của bạn
 import 'firebase_service.dart';
 
+// [SỬA LỖI] Đổi tên class thành 'MakeupRequests' (số nhiều) ở mọi nơi
 class MakeupRequestService {
   static final FirebaseFirestore _firestore = FirebaseService.firestore;
 
@@ -51,9 +54,9 @@ class MakeupRequestService {
     return docRef.id;
   }
 
-  // Cập nhật makeup request
-  static Future<void> updateMakeupRequest(String makeupRequestId, MakeupRequests makeupRequest) async {
-    await _firestore.collection('makeupRequests').doc(makeupRequestId).update(makeupRequest.toJson());
+  // [SỬA LỖI] Hàm này phải nhận Map<String, dynamic>
+  static Future<void> updateMakeupRequest(String makeupRequestId, Map<String, dynamic> data) async {
+    await _firestore.collection('makeupRequests').doc(makeupRequestId).update(data);
   }
 
   // Xóa makeup request
@@ -69,24 +72,4 @@ class MakeupRequestService {
     }
     return null;
   }
-
-  // Duyệt makeup request
-  static Future<void> approveMakeupRequest(String makeupRequestId, String approverId) async {
-    await _firestore.collection('makeupRequests').doc(makeupRequestId).update({
-      'status': 'approved',
-      'approverId': approverId,
-      'updatedAt': Timestamp.now(),
-    });
-  }
-
-  // Từ chối makeup request
-  static Future<void> rejectMakeupRequest(String makeupRequestId, String approverId) async {
-    await _firestore.collection('makeupRequests').doc(makeupRequestId).update({
-      'status': 'rejected',
-      'approverId': approverId,
-      'updatedAt': Timestamp.now(),
-    });
-  }
 }
-
-

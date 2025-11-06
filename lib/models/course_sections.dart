@@ -8,7 +8,7 @@ class CourseSections {
   final String roomId;
   final String semesterId;
   final int totalSessions;
-  final String scheduleString;
+  final String scheduleString; // Tên biến này vẫn giữ nguyên
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -44,7 +44,10 @@ class CourseSections {
       roomId: json['roomId'] as String? ?? '',
       semesterId: json['semesterId'] as String? ?? '',
       totalSessions: json['totalSessions'] as int? ?? 0,
-      scheduleString: json['scheduleString'] as String? ?? '',
+
+      // [SỬA LỖI] Đọc từ 'schedule' (trong Firebase) thay vì 'scheduleString'
+      scheduleString: json['schedule'] as String? ?? '',
+
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
     );
@@ -58,7 +61,10 @@ class CourseSections {
       'roomId': roomId,
       'semesterId': semesterId,
       'totalSessions': totalSessions,
-      'scheduleString': scheduleString,
+
+      // [SỬA LỖI] Ghi vào 'schedule' (trong Firebase)
+      'schedule': scheduleString,
+
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -90,5 +96,3 @@ class CourseSections {
     );
   }
 }
-
-

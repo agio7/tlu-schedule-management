@@ -1,7 +1,10 @@
+// [DÁN TOÀN BỘ CODE NÀY VÀO: lib/services/leave_request_service.dart]
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/leave_requests.dart';
+import '../models/leave_requests.dart'; // Dùng tên file model của bạn
 import 'firebase_service.dart';
 
+// [SỬA LỖI] Đổi tên class thành 'LeaveRequests' (số nhiều) ở mọi nơi
 class LeaveRequestService {
   static final FirebaseFirestore _firestore = FirebaseService.firestore;
 
@@ -51,9 +54,9 @@ class LeaveRequestService {
     return docRef.id;
   }
 
-  // Cập nhật leave request
-  static Future<void> updateLeaveRequest(String leaveRequestId, LeaveRequests leaveRequest) async {
-    await _firestore.collection('leaveRequests').doc(leaveRequestId).update(leaveRequest.toJson());
+  // [SỬA LỖI] Hàm này phải nhận Map<String, dynamic>
+  static Future<void> updateLeaveRequest(String leaveRequestId, Map<String, dynamic> data) async {
+    await _firestore.collection('leaveRequests').doc(leaveRequestId).update(data);
   }
 
   // Xóa leave request
@@ -69,24 +72,4 @@ class LeaveRequestService {
     }
     return null;
   }
-
-  // Duyệt leave request
-  static Future<void> approveLeaveRequest(String leaveRequestId, String approverId) async {
-    await _firestore.collection('leaveRequests').doc(leaveRequestId).update({
-      'status': 'approved',
-      'approverId': approverId,
-      'updatedAt': Timestamp.now(),
-    });
-  }
-
-  // Từ chối leave request
-  static Future<void> rejectLeaveRequest(String leaveRequestId, String approverId) async {
-    await _firestore.collection('leaveRequests').doc(leaveRequestId).update({
-      'status': 'rejected',
-      'approverId': approverId,
-      'updatedAt': Timestamp.now(),
-    });
-  }
 }
-
-

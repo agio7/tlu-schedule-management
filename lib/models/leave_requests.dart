@@ -44,18 +44,11 @@ class LeaveRequests {
       return DateTime.now();
     }
 
-    // [SỬA LỖI] Bắt đầu sửa lỗi ép kiểu
-    // Code gốc của bạn (bị lỗi):
-    // final attachments = json['attachments'] as Map<String, dynamic>?;
-
-    // Code đã sửa:
-    // Kiểm tra kiểu dữ liệu của 'attachments' trước khi ép kiểu.
+    // [SỬA LỖI] Xử lý trường hợp 'attachments' có thể là Map hoặc List
     Map<String, dynamic>? attachments;
     if (json['attachments'] is Map<String, dynamic>) {
       attachments = json['attachments'] as Map<String, dynamic>?;
     } else if (json['attachments'] is List<dynamic> && (json['attachments'] as List<dynamic>).isNotEmpty) {
-      // Nếu 'attachments' là một List (như log lỗi đã báo),
-      // thử lấy phần tử đầu tiên (nếu nó là Map)
       final firstAttachment = (json['attachments'] as List<dynamic>).first;
       if (firstAttachment is Map<String, dynamic>) {
         attachments = firstAttachment;
@@ -97,6 +90,7 @@ class LeaveRequests {
     return {
       'teacherId': teacherId,
       'scheduleId': scheduleId,
+      'lessonId': lessonId, // [THÊM] Thêm lessonId vào toJson
       'reason': reason,
       'status': status.toString().split('.').last,
       'approverId': approverId,
@@ -111,6 +105,7 @@ class LeaveRequests {
     String? id,
     String? teacherId,
     String? scheduleId,
+    String? lessonId, // [THÊM] Thêm lessonId
     String? reason,
     LeaveRequestStatus? status,
     String? approverId,
@@ -123,6 +118,7 @@ class LeaveRequests {
       id: id ?? this.id,
       teacherId: teacherId ?? this.teacherId,
       scheduleId: scheduleId ?? this.scheduleId,
+      lessonId: lessonId ?? this.lessonId, // [THÊM]
       reason: reason ?? this.reason,
       status: status ?? this.status,
       approverId: approverId ?? this.approverId,
