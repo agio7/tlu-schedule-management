@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 // Use existing admin feature screens
 import 'dashboard/admin_dashboard_screen.dart';
 import 'schedule/schedule_management_screen.dart';
@@ -130,8 +132,8 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            // TODO: Logout
+                          onPressed: () async {
+                            await Provider.of<AuthProvider>(context, listen: false).signOut();
                           },
                           icon: const Icon(Icons.logout),
                           label: const Text('Đăng xuất'),
