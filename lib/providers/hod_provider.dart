@@ -492,19 +492,31 @@ class AppState extends ChangeNotifier {
 
   Future<void> _loadMakeupRequests() async {
     final allMakeups = <MakeupRegistration>[];
+
     for (final firestoreMakeup in _makeupRequestsCache.values) {
       final teacher = _userCache[firestoreMakeup.teacherId];
       final teacherName = teacher?.fullName ?? 'Không rõ';
 
-      // [SỬA LỖI] Dùng originalScheduleId
-      final originalSchedule = (firestoreMakeup.originalScheduleId != null && firestoreMakeup.originalScheduleId!.isNotEmpty)
+      // --- [1] Lấy lịch gốc theo originalScheduleId (nếu có)
+      final originalSchedule = (firestoreMakeup.originalScheduleId != null &&
+          firestoreMakeup.originalScheduleId!.isNotEmpty)
           ? _scheduleCache[firestoreMakeup.originalScheduleId!]
           : null;
 
+      // --- [2] Bổ sung: lấy bài giảng gốc từ lessonId (nếu không có schedule)
       Lessons? originalLesson;
-      // Tạm thời bỏ qua logic lesson
+      if (originalSchedule == null &&
+          firestoreMakeup.lessonId != null &&
+          firestoreMakeup.lessonId!.isNotEmpty) {
+        originalLesson = _lessonCache[firestoreMakeup.lessonId!];
+      }
 
-      if (originalSchedule == null && originalLesson == null) continue;
+      // Nếu cả hai đều không có thì bỏ qua
+      if (originalSchedule == null && originalLesson == null) {
+        print(
+            '⚠️ MakeupRequest bị bỏ qua vì không có originalScheduleId hoặc lessonId hợp lệ: ${firestoreMakeup.id}');
+        continue;
+      }
 
       String subjectName = '';
       String className = '';
@@ -512,34 +524,47 @@ class AppState extends ChangeNotifier {
       String originalSession;
       DateTime originalDate;
 
+      // --- [3] Nếu có originalSchedule
       if (originalSchedule != null) {
         final section = _sectionCache[originalSchedule.courseSectionId];
         if (section == null) continue;
+
         subjectName = _subjectCache[section.subjectId]?.name ?? '';
         className = _classroomCache[section.classroomId]?.name ?? '';
-        originalSession = '${originalSchedule.startTime.hour}:${originalSchedule.startTime.minute.toString().padLeft(2, '0')}-${originalSchedule.endTime.hour}:${originalSchedule.endTime.minute.toString().padLeft(2, '0')}';
+        originalSession =
+        '${originalSchedule.startTime.hour}:${originalSchedule.startTime.minute.toString().padLeft(2, '0')}-${originalSchedule.endTime.hour}:${originalSchedule.endTime.minute.toString().padLeft(2, '0')}';
         originalDate = originalSchedule.startTime;
-      } else if (originalLesson != null) {
-        // (Logic này tạm thời không chạy)
-        subjectName = originalLesson.subject ?? '';
-        className = originalLesson.className;
-        final sParts = originalLesson.startTime.split(':');
-        final eParts = originalLesson.endTime.split(':');
-        originalSession = '${sParts.first}:${(sParts.length>1?sParts[1].padLeft(2,'0'):'00')}-${eParts.first}:${(eParts.length>1?eParts[1].padLeft(2,'0'):'00')}';
-        originalDate = originalLesson.date;
-      } else {
-        continue;
+      }
+      // --- [4] Nếu không có schedule nhưng có lesson
+      else {
+        subjectName = originalLesson?.subject ?? '';
+        className = originalLesson?.className ?? '';
+        final sParts = originalLesson?.startTime.split(':') ?? [''];
+        final eParts = originalLesson?.endTime.split(':') ?? [''];
+        originalSession =
+        '${sParts.first}:${(sParts.length > 1 ? sParts[1].padLeft(2, '0') : '00')}-${eParts.first}:${(eParts.length > 1 ? eParts[1].padLeft(2, '0') : '00')}';
+        originalDate = originalLesson?.date ?? firestoreMakeup.createdAt;
       }
 
+      // --- [5] Các thông tin còn lại
       roomName = _roomCache[firestoreMakeup.proposedRoomId]?.name ?? '';
 
-      final makeupSession = '${firestoreMakeup.proposedStartTime.hour}:${firestoreMakeup.proposedStartTime.minute.toString().padLeft(2, '0')}-${firestoreMakeup.proposedEndTime.hour}:${firestoreMakeup.proposedEndTime.minute.toString().padLeft(2, '0')}';
+      final makeupSession =
+          '${firestoreMakeup.proposedStartTime.hour}:${firestoreMakeup.proposedStartTime.minute.toString().padLeft(2, '0')}-${firestoreMakeup.proposedEndTime.hour}:${firestoreMakeup.proposedEndTime.minute.toString().padLeft(2, '0')}';
+
       RequestStatus status;
       switch (firestoreMakeup.status) {
-        case MakeupRequestStatus.approved: status = RequestStatus.approved; break;
-        case MakeupRequestStatus.rejected: status = RequestStatus.rejected; break;
-        default: status = RequestStatus.pending;
+        case MakeupRequestStatus.approved:
+          status = RequestStatus.approved;
+          break;
+        case MakeupRequestStatus.rejected:
+          status = RequestStatus.rejected;
+          break;
+        default:
+          status = RequestStatus.pending;
       }
+
+      // --- [6] Thêm vào danh sách
       allMakeups.add(MakeupRegistration(
         id: firestoreMakeup.id,
         lecturer: teacherName,
@@ -551,16 +576,21 @@ class AppState extends ChangeNotifier {
         makeupSession: makeupSession,
         makeupRoom: roomName,
         status: status,
-        // [SỬA LỖI] Dùng hàm helper mới
-        approvedBy: firestoreMakeup.approverId != null ? _getApproverName(firestoreMakeup.approverId) : null,
-        rejectedBy: status == RequestStatus.rejected ? _getApproverName(firestoreMakeup.approverId) : null,
-        rejectionReason: null, // Model của bạn không có trường approverNotes
-        approvedDate: null, // Model của bạn không có trường approvedDate
+        approvedBy: firestoreMakeup.approverId != null
+            ? _getApproverName(firestoreMakeup.approverId)
+            : null,
+        rejectedBy: status == RequestStatus.rejected
+            ? _getApproverName(firestoreMakeup.approverId)
+            : null,
+        rejectionReason: firestoreMakeup.approverNotes,
+        approvedDate: firestoreMakeup.updatedAt,
         submittedAt: firestoreMakeup.createdAt,
       ));
     }
+
     _makeups = allMakeups;
   }
+
 
   // --- Các hàm phê duyệt (Đã sửa) ---
 

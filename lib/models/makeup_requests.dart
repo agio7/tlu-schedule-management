@@ -10,41 +10,47 @@ class MakeupRequests {
   final String id;
   final String teacherId;
   final String? approverId;
-  final String? originalScheduleId; // <-- TRƯỜNG BỊ THIẾU
+
+  // --- Bổ sung các trường cần thiết ---
+  final String? departmentId;
+  final String? lessonId; // để khớp với Firestore (bạn có field "lessonId")
+  final String? originalScheduleId; // vẫn giữ để dùng nếu có
   final String reason;
-  final String proposedRoomId; // Giả sử bạn có trường này
-  final DateTime proposedStartTime; // Giả sử bạn có trường này
-  final DateTime proposedEndTime; // Giả sử bạn có trường này
+  final String? proposedRoomId;
+  final DateTime proposedStartTime;
+  final DateTime proposedEndTime;
   final MakeupRequestStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  // [SỬA LỖI] Thêm leaveRequestId (dùng trong provider)
-  final String leaveRequestId;
+  final String? leaveRequestId;
+  final DateTime? makeupDate; // thêm nếu Firestore có field makeupDate
+  final String? approverNotes;
 
   MakeupRequests({
     required this.id,
     required this.teacherId,
     this.approverId,
+    this.departmentId,
+    this.lessonId,
     this.originalScheduleId,
     required this.reason,
-    required this.proposedRoomId,
+    this.proposedRoomId,
     required this.proposedStartTime,
     required this.proposedEndTime,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
-    required this.leaveRequestId, // Thêm vào constructor
+    this.leaveRequestId,
+    this.makeupDate,
+    this.approverNotes,
   });
 
+  /// --- Factory khởi tạo từ Firestore ---
   factory MakeupRequests.fromJson(String id, Map<String, dynamic> json) {
     DateTime parseTimestamp(dynamic timestamp) {
-      if (timestamp is Timestamp) {
-        return timestamp.toDate();
-      }
-      if (timestamp is String) {
-        return DateTime.tryParse(timestamp) ?? DateTime.now();
-      }
+      if (timestamp == null) return DateTime.now();
+      if (timestamp is Timestamp) return timestamp.toDate();
+      if (timestamp is String) return DateTime.tryParse(timestamp) ?? DateTime.now();
       return DateTime.now();
     }
 
@@ -52,30 +58,31 @@ class MakeupRequests {
       id: id,
       teacherId: json['teacherId'] as String? ?? '',
       approverId: json['approverId'] as String?,
-      originalScheduleId: json['originalScheduleId'] as String?, // <-- ĐÃ THÊM
+      departmentId: json['departmentId'] as String?,
+      lessonId: json['lessonId'] as String?, // thêm dòng này
+      originalScheduleId: json['originalScheduleId'] as String?,
       reason: json['reason'] as String? ?? '',
-
-      // [SỬA LỖI] Giả sử tên trường trong Firebase
-      proposedRoomId: json['proposedRoomId'] as String? ?? '',
-      proposedStartTime: parseTimestamp(json['requestedTime'] ?? json['proposedStartTime']), // Dùng requestedTime
-      proposedEndTime: parseTimestamp(json['requestedTime'] ?? json['proposedEndTime']), // Cần endTime
-
-      status: MakeupRequestStatus.values.firstWhere(
-            (e) => e.toString() == 'MakeupRequestStatus.${json['status']}',
-        orElse: () => MakeupRequestStatus.pending,
-      ),
+      proposedRoomId: json['proposedRoomId'] as String?,
+      proposedStartTime: parseTimestamp(
+          json['proposedStartTime'] ?? json['requestedTime']),
+      proposedEndTime:
+      parseTimestamp(json['proposedEndTime'] ?? json['requestedTime']),
+      status: _parseStatus(json['status']),
       createdAt: parseTimestamp(json['createdAt']),
       updatedAt: parseTimestamp(json['updatedAt']),
-
-      // [SỬA LỖI] Đọc 'leaveRequestId' (nếu có)
-      leaveRequestId: json['leaveRequestId'] as String? ?? '',
+      leaveRequestId: json['leaveRequestId'] as String?,
+      makeupDate: parseTimestamp(json['makeupDate']),
+      approverNotes: json['approverNotes'] as String?,
     );
   }
 
+  /// --- Chuyển từ enum sang string khi lưu ---
   Map<String, dynamic> toJson() {
     return {
       'teacherId': teacherId,
       'approverId': approverId,
+      'departmentId': departmentId,
+      'lessonId': lessonId,
       'originalScheduleId': originalScheduleId,
       'reason': reason,
       'proposedRoomId': proposedRoomId,
@@ -85,6 +92,17 @@ class MakeupRequests {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'leaveRequestId': leaveRequestId,
+      'makeupDate': makeupDate != null ? Timestamp.fromDate(makeupDate!) : null,
+      'approverNotes': approverNotes,
     };
+  }
+
+  /// --- Helper: chuyển string sang enum ---
+  static MakeupRequestStatus _parseStatus(dynamic value) {
+    if (value == null) return MakeupRequestStatus.pending;
+    final str = value.toString().toLowerCase();
+    if (str.contains('approved')) return MakeupRequestStatus.approved;
+    if (str.contains('rejected')) return MakeupRequestStatus.rejected;
+    return MakeupRequestStatus.pending;
   }
 }

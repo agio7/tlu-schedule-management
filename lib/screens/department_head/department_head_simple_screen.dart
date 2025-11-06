@@ -1152,6 +1152,7 @@ class _MakeupRequestCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                // **Phần đã được thêm và sửa chữa:**
                 if (makeup.rejectionReason != null && makeup.rejectionReason!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
