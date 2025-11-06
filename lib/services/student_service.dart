@@ -25,7 +25,7 @@ class StudentService {
   // Lấy sinh viên theo className
   static Future<List<User>> getStudentsByClassName(String className) async {
     try {
-      // Thử query với className
+      // Query từ Firebase với className
       final QuerySnapshot snapshot = await _firestore
           .collection('users')
           .where('role', isEqualTo: 'student')
@@ -33,42 +33,21 @@ class StudentService {
           .orderBy('fullName')
           .get();
       
-      if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((doc) {
-          return User.fromJson(doc.id, doc.data() as Map<String, dynamic>);
-        }).toList();
-      }
-      
-      // Fallback: Lấy tất cả sinh viên và filter theo className ở client side
-      // (Nếu không có index hoặc field className không tồn tại)
-      final allStudents = await getAllStudents();
-      return allStudents.where((student) {
-        // Kiểm tra nếu user có field className trong document
-        // (cần kiểm tra trực tiếp từ Firestore vì User model có thể không có field này)
-        return true; // Tạm thời trả về tất cả, có thể filter sau nếu cần
+      // Chỉ trả về dữ liệu từ Firebase, không tạo thủ công
+      return snapshot.docs.map((doc) {
+        return User.fromJson(doc.id, doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
       print('Error getting students by className: $e');
-      // Nếu query fail (do thiếu index), fallback về lấy tất cả
-      try {
-        final allStudents = await getAllStudents();
-        // Filter theo className nếu có trong data
-        return allStudents.where((student) {
-          // Vì User model không có className, ta sẽ trả về tất cả
-          // và để client code xử lý
-          return true;
-        }).toList();
-      } catch (e2) {
-        print('Error in fallback: $e2');
-        return [];
-      }
+      // Nếu query fail, chỉ trả về empty list (không fallback)
+      return [];
     }
   }
 
   // Lấy sinh viên theo classroomId
   static Future<List<User>> getStudentsByClassroomId(String classroomId) async {
     try {
-      // Thử query với classroomId
+      // Query từ Firebase với classroomId
       final QuerySnapshot snapshot = await _firestore
           .collection('users')
           .where('role', isEqualTo: 'student')
@@ -76,23 +55,14 @@ class StudentService {
           .orderBy('fullName')
           .get();
       
-      if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((doc) {
-          return User.fromJson(doc.id, doc.data() as Map<String, dynamic>);
-        }).toList();
-      }
-      
-      // Fallback về lấy tất cả nếu không tìm thấy
-      return [];
+      // Chỉ trả về dữ liệu từ Firebase, không tạo thủ công
+      return snapshot.docs.map((doc) {
+        return User.fromJson(doc.id, doc.data() as Map<String, dynamic>);
+      }).toList();
     } catch (e) {
       print('Error getting students by classroomId: $e');
-      // Nếu query fail (do thiếu index hoặc field), fallback về lấy tất cả
-      try {
-        return await getAllStudents();
-      } catch (e2) {
-        print('Error in fallback: $e2');
-        return [];
-      }
+      // Nếu query fail, chỉ trả về empty list (không fallback)
+      return [];
     }
   }
 

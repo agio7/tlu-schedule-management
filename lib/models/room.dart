@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Room {
   final String id;
   final String name;
@@ -24,17 +26,43 @@ class Room {
   });
 
   factory Room.fromJson(Map<String, dynamic> json) {
+    // Xử lý createdAt và updatedAt an toàn
+    DateTime parseDateTime(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is String) {
+        return DateTime.tryParse(value) ?? DateTime.now();
+      }
+      if (value is Timestamp) {
+        return value.toDate();
+      }
+      if (value is DateTime) {
+        return value;
+      }
+      return DateTime.now();
+    }
+
+    // Xử lý capacity (có thể là number hoặc string)
+    int parseCapacity(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) {
+        return int.tryParse(value) ?? 0;
+      }
+      return 0;
+    }
+
     return Room(
-      id: json['id'],
-      name: json['name'],
-      code: json['code'],
-      building: json['building'],
-      capacity: json['capacity'],
-      type: json['type'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      building: json['building']?.toString() ?? '',
+      capacity: parseCapacity(json['capacity']),
+      type: json['type']?.toString() ?? 'lecture',
       equipment: List<String>.from(json['equipment'] ?? []),
       isAvailable: json['isAvailable'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
     );
   }
 

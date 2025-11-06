@@ -89,6 +89,15 @@ service cloud.firestore {
       allow delete: if hasRole('admin');
     }
 
+    // Makeup requests
+    match /makeupRequests/{reqId} {
+      allow read: if isSignedIn();
+      // Owner can create/cancel; approvers (admin/department_head) can approve
+      allow create: if isSignedIn() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if (isSignedIn() && request.resource.data.teacherId == request.auth.uid) || hasRole('admin') || hasRole('department_head');
+      allow delete: if hasRole('admin');
+    }
+
     // Notifications (read per user)
     match /notifications/{notiId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;

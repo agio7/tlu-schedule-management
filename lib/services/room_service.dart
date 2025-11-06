@@ -10,17 +10,34 @@ class RoomService {
   static Future<List<Room>> getAllRooms() async {
     try {
       final QuerySnapshot snapshot = await _firestore.collection('rooms').get();
-      return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return Room.fromJson({
-          'id': doc.id,
-          ...data,
-          'createdAt': (data['createdAt'] as Timestamp?)?.toDate().toIso8601String() ?? DateTime.now().toIso8601String(),
-          'updatedAt': (data['updatedAt'] as Timestamp?)?.toDate().toIso8601String() ?? DateTime.now().toIso8601String(),
-        });
-      }).toList();
+      print(' Tổng số phòng học trong Firebase: ${snapshot.docs.length}');
+      
+      final rooms = <Room>[];
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          print(' Đang parse phòng: ${data['code']} - isAvailable: ${data['isAvailable']}');
+          
+          final room = Room.fromJson({
+            'id': doc.id,
+            ...data,
+            // Giữ nguyên Timestamp, để Room.fromJson() xử lý
+            'createdAt': data['createdAt'],
+            'updatedAt': data['updatedAt'],
+          });
+          rooms.add(room);
+          print(' Đã parse thành công: ${room.code} - ${room.name}');
+        } catch (e, stackTrace) {
+          print('Lỗi khi parse phòng ${doc.id}: $e');
+          print('   Stack trace: $stackTrace');
+          print('   Data: ${doc.data()}');
+        }
+      }
+      
+      print('✅ Tổng số phòng học đã parse thành công: ${rooms.length}');
+      return rooms;
     } catch (e) {
-      print('Error getting all rooms: $e');
+      print(' Error getting all rooms: $e');
       return [];
     }
   }
@@ -28,8 +45,11 @@ class RoomService {
   // Lấy phòng học trống trong một ngày (không cần thời gian cụ thể)
   static Future<List<Room>> getAvailableRooms(DateTime date) async {
     try {
+      print(' Đang tìm phòng học trống cho ngày: ${date.toString().split(' ')[0]}');
+      
       // Lấy tất cả phòng học
       final allRooms = await getAllRooms();
+      print(' Tổng số phòng học: ${allRooms.length}');
       
       // Lấy tất cả lessons trong ngày đó
       final startOfDay = DateTime(date.year, date.month, date.day);
@@ -41,6 +61,8 @@ class RoomService {
           .where('date', isLessThanOrEqualTo: endOfDay)
           .get();
       
+      print(' Số lesson trong ngày: ${lessonsSnapshot.docs.length}');
+      
       final lessons = lessonsSnapshot.docs.map((doc) {
         return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
@@ -50,6 +72,7 @@ class RoomService {
       for (var lesson in lessons) {
         if (lesson.roomId != null) {
           occupiedRoomIds.add(lesson.roomId!);
+          print(' Phòng ${lesson.roomId} đã bị sử dụng bởi lesson ${lesson.id}');
         } else if (lesson.room.isNotEmpty) {
           // Tìm roomId từ room name
           try {
@@ -57,18 +80,32 @@ class RoomService {
               (r) => r.code == lesson.room || r.name == lesson.room,
             );
             occupiedRoomIds.add(room.id);
+            print(' Phòng ${room.code} đã bị sử dụng bởi lesson ${lesson.id}');
           } catch (e) {
             // Không tìm thấy phòng, bỏ qua
+            print('Không tìm thấy phòng với tên: ${lesson.room}');
           }
         }
       }
       
+      print('Tổng số phòng đã sử dụng: ${occupiedRoomIds.length}');
+      
       // Lọc ra các phòng trống và available
-      return allRooms.where((room) {
-        return room.isAvailable && !occupiedRoomIds.contains(room.id);
+      final availableRooms = allRooms.where((room) {
+        final isAvailable = room.isAvailable && !occupiedRoomIds.contains(room.id);
+        if (!isAvailable) {
+          print('Phòng ${room.code} không available: isAvailable=${room.isAvailable}, occupied=${occupiedRoomIds.contains(room.id)}');
+        } else {
+          print(' Phòng ${room.code} - ${room.name} available');
+        }
+        return isAvailable;
       }).toList();
-    } catch (e) {
-      print('Error getting available rooms: $e');
+      
+      print(' Tổng số phòng học trống: ${availableRooms.length}');
+      return availableRooms;
+    } catch (e, stackTrace) {
+      print(' Error getting available rooms: $e');
+      print('   Stack trace: $stackTrace');
       return [];
     }
   }

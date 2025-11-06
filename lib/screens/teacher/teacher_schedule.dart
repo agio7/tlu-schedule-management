@@ -189,7 +189,7 @@ class _TeacherScheduleState extends State<TeacherSchedule> {
                               ),
                               SizedBox(height: 16),
                               Text(
-                                'Không có buổi học nào',
+                                'Không có buổi dạy nào',
                                 style: TextStyle(
                                   color: Colors.grey,
                                   fontSize: 16,

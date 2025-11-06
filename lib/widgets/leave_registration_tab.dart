@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/lesson.dart';
 import '../models/leave_request.dart';
 import '../models/room.dart';
 import '../providers/lesson_provider.dart';
+import '../providers/auth_provider.dart' as app_auth;
 import '../services/room_service.dart';
 
 class LeaveRegistrationTab extends StatefulWidget {
@@ -298,62 +300,6 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
 
                 const SizedBox(height: 16),
 
-                // Start Time
-                const Text(
-                  'Giờ bắt đầu',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Text(
-                    widget.lesson.startTime,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF374151),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // End Time
-                const Text(
-                  'Giờ kết thúc',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Text(
-                    widget.lesson.endTime,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF374151),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
                 // Additional Notes
                 const Text(
                   'Ghi chú bổ sung',
@@ -468,7 +414,7 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
     }
   }
 
-  void _submitRegistration() {
+  void _submitRegistration() async {
     if (_registrationType == 'makeup' && _makeupDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -477,6 +423,60 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
         ),
       );
       return;
+    }
+
+    // Validation cho dạy bù
+    if (_registrationType == 'makeup') {
+      if (_selectedRoomId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng chọn phòng học'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (_selectedTimeSlot == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng chọn tiết học trống'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    // Lấy user ID - Phải dùng FirebaseAuth UID để pass Firestore rules
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Sử dụng FirebaseAuth UID để pass Firestore rules
+    // Firestore rules yêu cầu: request.resource.data.teacherId == request.auth.uid
+    final teacherId = currentUser.uid;
+    
+    print('🔐 Using FirebaseAuth UID as teacherId: "$teacherId"');
+    
+    // Lấy departmentId từ userData hoặc dùng giá trị mặc định
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final userData = authProvider.userData;
+    final departmentId = userData?.departmentId ?? 'Ikwjw5HLzDBXcXifGWSP';
+    
+    if (userData != null) {
+      print('🔐 UserData.id: "${userData.id}"');
+      print('🔐 UserData.departmentId: "${userData.departmentId}"');
+      print('🔐 Using departmentId: "$departmentId"');
+      print('🔐 Match: ${currentUser.uid == userData.id}');
+    } else {
+      print('🔐 Using default departmentId: "$departmentId"');
     }
 
     // Lấy thời gian từ tiết học đã chọn hoặc dùng thời gian mặc định
@@ -512,33 +512,48 @@ class _LeaveRegistrationTabState extends State<LeaveRegistrationTab> {
       startTime: startTime,
       endTime: endTime,
       additionalNotes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      teacherId: 'teacher_001', // TODO: Lấy từ auth provider
+      teacherId: teacherId, // Sử dụng FirebaseAuth UID để pass Firestore rules
       requestDate: DateTime.now(),
       roomId: roomId,
       roomName: roomName,
+      departmentId: departmentId, // Thêm departmentId để phê duyệt
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    context.read<LessonProvider>().submitLeaveRequest(leaveRequest);
+    try {
+      await context.read<LessonProvider>().submitLeaveRequest(leaveRequest);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã gửi đăng ký thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã gửi đăng ký thành công'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    // Reset form
-    setState(() {
-      _registrationType = 'leave';
-      _selectedReason = '';
-      _makeupDate = null;
-      _selectedRoomId = null;
-      _selectedTimeSlot = null;
-      _availableRooms = [];
-      _availableTimeSlots = [];
-      _notesController.clear();
-    });
+      // Reset form
+      setState(() {
+        _registrationType = 'leave';
+        _selectedReason = '';
+        _makeupDate = null;
+        _selectedRoomId = null;
+        _selectedTimeSlot = null;
+        _availableRooms = [];
+        _availableTimeSlots = [];
+        _notesController.clear();
+      });
+    } catch (e) {
+      print('Error submitting leave request: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi gửi đăng ký: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

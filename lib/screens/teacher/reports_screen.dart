@@ -77,12 +77,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final upcomingLessons = lessonProvider.getUpcomingLessons();
           final leaveRequests = lessonProvider.leaveRequests;
 
+          // Debug: In thông tin requests
+          print('📊 Reports Screen - Total requests: ${leaveRequests.length}');
+          for (var req in leaveRequests) {
+            print('   - Request ID: ${req.id}, Type: "${req.type}", Status: ${req.status}');
+          }
+
           // Calculate statistics
           final totalLessons = allLessons.length;
           final completedCount = completedLessons.length;
           final upcomingCount = upcomingLessons.length;
           final leaveCount = leaveRequests.where((r) => r.type == 'leave').length;
           final makeupCount = leaveRequests.where((r) => r.type == 'makeup').length;
+          
+          print('📊 Leave count: $leaveCount, Makeup count: $makeupCount');
 
           // Calculate total teaching hours
           double totalHours = 0;

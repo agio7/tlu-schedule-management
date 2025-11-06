@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/lesson.dart';
 import '../models/leave_request.dart';
@@ -60,32 +61,10 @@ class RealtimeService {
     });
   }
 
-  // Stream leave requests theo teacher ID với real-time updates
+  // Stream leave requests theo teacher ID với real-time updates (từ cả 2 collection)
   static Stream<List<LeaveRequest>> getLeaveRequestsStreamByTeacher(String teacherId) {
-    try {
-      return _firestore
-          .collection('leaveRequests')
-          .where('teacherId', isEqualTo: teacherId)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-        }).toList();
-      });
-    } catch (e) {
-      print('Error in getLeaveRequestsStreamByTeacher: $e');
-      // Fallback: return empty stream if orderBy fails (might need index)
-      return _firestore
-          .collection('leaveRequests')
-          .where('teacherId', isEqualTo: teacherId)
-          .snapshots()
-          .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-        }).toList();
-      });
-    }
+    // Sử dụng hàm từ LeaveRequestService để combine cả 2 collection
+    return LeaveRequestService.getLeaveRequestsStreamByTeacher(teacherId);
   }
 
   // Stream tất cả lessons với real-time updates
@@ -100,16 +79,76 @@ class RealtimeService {
     });
   }
 
-  // Stream tất cả leave requests với real-time updates
+  // Stream tất cả leave requests với real-time updates (từ cả 2 collection)
   static Stream<List<LeaveRequest>> getAllLeaveRequestsStream() {
-    return _firestore
-        .collection('leaveRequests')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return LeaveRequest.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-    });
+    // Combine streams từ cả 2 collection
+    final leaveStream = _firestore.collection('leaveRequests').snapshots();
+    final makeupStream = _firestore.collection('makeupRequests').snapshots();
+    
+    // Combine 2 streams bằng cách merge
+    StreamController<List<LeaveRequest>>? controller;
+    StreamSubscription<QuerySnapshot>? leaveSub;
+    StreamSubscription<QuerySnapshot>? makeupSub;
+    
+    QuerySnapshot? leaveSnapshot;
+    QuerySnapshot? makeupSnapshot;
+    
+    void emitCombined() {
+      final allRequests = <LeaveRequest>[];
+      
+      if (leaveSnapshot != null) {
+        for (var doc in leaveSnapshot!.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            // Đảm bảo type là 'leave' cho leaveRequests
+            if (data['type'] == null || data['type'].toString().isEmpty) {
+              data['type'] = 'leave';
+            }
+            allRequests.add(LeaveRequest.fromMap(data, doc.id));
+          } catch (e) {
+            print('Error parsing leave request ${doc.id}: $e');
+          }
+        }
+      }
+      
+      if (makeupSnapshot != null) {
+        for (var doc in makeupSnapshot!.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            // Đảm bảo type là 'makeup' cho makeupRequests
+            if (data['type'] == null || data['type'].toString().isEmpty) {
+              data['type'] = 'makeup';
+            }
+            allRequests.add(LeaveRequest.fromMap(data, doc.id));
+          } catch (e) {
+            print('Error parsing makeup request ${doc.id}: $e');
+          }
+        }
+      }
+      
+      controller?.add(allRequests);
+    }
+    
+    controller = StreamController<List<LeaveRequest>>(
+      onListen: () {
+        leaveSub = leaveStream.listen((snapshot) {
+          leaveSnapshot = snapshot;
+          emitCombined();
+        });
+        
+        makeupSub = makeupStream.listen((snapshot) {
+          makeupSnapshot = snapshot;
+          emitCombined();
+        });
+      },
+      onCancel: () {
+        leaveSub?.cancel();
+        makeupSub?.cancel();
+        controller?.close();
+      },
+    );
+    
+    return controller.stream;
   }
 }
 

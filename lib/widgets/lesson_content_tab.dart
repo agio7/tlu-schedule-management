@@ -31,7 +31,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng nhập tiêu đề buổi học'),
+          content: Text('Vui lòng nhập tiêu đề buổi dạy'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -185,7 +185,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tiêu đề buổi học',
+                  'Tiêu đề buổi dạy',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -198,7 +198,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                   enabled: widget.lesson.status == 'upcoming',
                   decoration: InputDecoration(
                     hintText: widget.lesson.status == 'upcoming' 
-                        ? 'Nhập tiêu đề buổi học' 
+                        ? 'Nhập tiêu đề buổi dạy'
                         : 'Lớp đã diễn ra - không thể chỉnh sửa',
                     border: const OutlineInputBorder(),
                     focusedBorder: const OutlineInputBorder(
@@ -237,7 +237,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Nội dung buổi học',
+                      'Nội dung buổi dạy',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -267,7 +267,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                     controller: _contentController,
                     maxLines: 8,
                     decoration: const InputDecoration(
-                      hintText: 'Nhập nội dung buổi học...',
+                      hintText: 'Nhập nội dung buổi dạy...',
                       border: OutlineInputBorder(),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Color(0xFF6B46C1)),
@@ -299,7 +299,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Đã lưu nội dung buổi học'),
+                              content: Text('Đã lưu nội dung buổi dạy'),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -328,7 +328,7 @@ class _LessonContentTabState extends State<LessonContentTab> {
                       ),
                     ),
                     child: Text(
-                      widget.lesson.content ?? 'Chưa có nội dung buổi học',
+                      widget.lesson.content ?? 'Chưa có nội dung buổi dạy',
                       style: TextStyle(
                         fontSize: 14,
                         color: widget.lesson.content != null

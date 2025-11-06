@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/lesson.dart';
 import '../models/leave_request.dart';
 import '../services/lesson_service.dart';
@@ -190,12 +191,38 @@ class LessonProvider with ChangeNotifier {
   // Load leave requests by teacher ID
   Future<void> loadLeaveRequestsByTeacher(String teacherId) async {
     try {
-      print('Loading leave requests for teacher: $teacherId');
-      _leaveRequests = await LeaveRequestService.getLeaveRequestsByTeacher(teacherId);
-      print('Loaded ${_leaveRequests.length} leave requests');
+      print('🔍 Loading leave requests for teacher: "$teacherId"');
+      print('🔍 TeacherId type: ${teacherId.runtimeType}, length: ${teacherId.length}');
+      
+      // Kiểm tra FirebaseAuth UID và userData.id
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final additionalTeacherIds = <String>[];
+      
+      if (currentUser != null) {
+        print('🔍 FirebaseAuth.currentUser.uid: "${currentUser.uid}"');
+        print('🔍 Match with teacherId: ${currentUser.uid == teacherId}');
+        
+        // Nếu không khớp, thêm vào danh sách query bổ sung
+        if (currentUser.uid != teacherId) {
+          print('⚠️ WARNING: teacherId does not match FirebaseAuth UID!');
+          print('   Will query with both values...');
+          additionalTeacherIds.add(currentUser.uid);
+        }
+      } else {
+        print('⚠️ FirebaseAuth.currentUser is null!');
+      }
+      
+      // Query với cả teacherId và FirebaseAuth UID (nếu khác nhau)
+      _leaveRequests = await LeaveRequestService.getLeaveRequestsByTeacher(
+        teacherId,
+        additionalTeacherIds: additionalTeacherIds.isNotEmpty ? additionalTeacherIds : null,
+      );
+      print('✅ Loaded ${_leaveRequests.length} leave requests');
+      print('   - Leave: ${_leaveRequests.where((r) => r.type == 'leave').length}');
+      print('   - Makeup: ${_leaveRequests.where((r) => r.type == 'makeup').length}');
       notifyListeners();
     } catch (e) {
-      print('Error loading leave requests by teacher: $e');
+      print('❌ Error loading leave requests by teacher: $e');
       _error = 'Lỗi khi tải dữ liệu nghỉ dạy: $e';
       notifyListeners();
     }
@@ -207,9 +234,14 @@ class LessonProvider with ChangeNotifier {
       if (requestId != null) {
         _leaveRequests.add(request.copyWith(id: requestId));
         notifyListeners();
+      } else {
+        throw Exception('Không thể tạo leave request - requestId là null');
       }
     } catch (e) {
       print('Error submitting leave request: $e');
+      _error = 'Lỗi khi gửi đăng ký: $e';
+      notifyListeners();
+      rethrow; // Throw lại để UI có thể bắt
     }
   }
 

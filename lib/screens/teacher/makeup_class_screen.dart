@@ -16,8 +16,6 @@ class _MakeupClassScreenState extends State<MakeupClassScreen> {
   String _selectedSubject = '';
   String _selectedClass = '';
   String _selectedRoom = '';
-  String _startTime = '';
-  String _endTime = '';
   String _content = '';
 
   final List<String> _subjects = [
@@ -272,71 +270,6 @@ class _MakeupClassScreenState extends State<MakeupClassScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Time Selection
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Giờ bắt đầu',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              initialValue: _startTime,
-                              decoration: const InputDecoration(
-                                hintText: '07:30',
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Color(0xFF6B46C1)),
-                                ),
-                              ),
-                              onChanged: (value) {
-                                _startTime = value;
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Giờ kết thúc',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              initialValue: _endTime,
-                              decoration: const InputDecoration(
-                                hintText: '09:30',
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Color(0xFF6B46C1)),
-                                ),
-                              ),
-                              onChanged: (value) {
-                                _endTime = value;
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
                   // Content
                   const Text(
                     'Nội dung buổi học',
@@ -399,9 +332,7 @@ class _MakeupClassScreenState extends State<MakeupClassScreen> {
     return _selectedDate != null &&
         _selectedSubject.isNotEmpty &&
         _selectedClass.isNotEmpty &&
-        _selectedRoom.isNotEmpty &&
-        _startTime.isNotEmpty &&
-        _endTime.isNotEmpty;
+        _selectedRoom.isNotEmpty;
   }
 
   void _submitMakeupClass() {
@@ -419,12 +350,13 @@ class _MakeupClassScreenState extends State<MakeupClassScreen> {
       _selectedSubject = '';
       _selectedClass = '';
       _selectedRoom = '';
-      _startTime = '';
-      _endTime = '';
       _content = '';
     });
   }
 }
+
+
+
 
 
 

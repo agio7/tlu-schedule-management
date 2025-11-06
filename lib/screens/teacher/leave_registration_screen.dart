@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/lesson_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart' as app_auth;
 import '../../widgets/bottom_navigation.dart';
 import '../../models/lesson.dart';
 import '../../models/leave_request.dart';
@@ -26,7 +27,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
     super.initState();
     // Setup real-time data streams
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = context.read<AuthProvider>();
+      final authProvider = context.read<app_auth.AuthProvider>();
       final lessonProvider = context.read<LessonProvider>();
       
       // Kiểm tra nếu chưa có dữ liệu, force load
@@ -484,7 +485,7 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
     );
   }
 
-  void _submitRegistration() {
+  Future<void> _submitRegistration() async {
     if (_registrationType == 'makeup' && _makeupDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -495,6 +496,24 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
       return;
     }
 
+    // Lấy teacherId từ FirebaseAuth để pass Firestore rules
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Lấy departmentId từ userData hoặc dùng giá trị mặc định
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final userData = authProvider.userData;
+    final departmentId = userData?.departmentId ?? 'Ikwjw5HLzDBXcXifGWSP';
+    final teacherId = currentUser.uid; // Dùng FirebaseAuth UID để pass rules
+    
     final leaveRequest = LeaveRequest(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       lessonId: _selectedLessonId,
@@ -504,29 +523,44 @@ class _LeaveRegistrationScreenState extends State<LeaveRegistrationScreen> {
       startTime: context.read<LessonProvider>().getLessonById(_selectedLessonId)?.startTime ?? '',
       endTime: context.read<LessonProvider>().getLessonById(_selectedLessonId)?.endTime ?? '',
       additionalNotes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      teacherId: context.read<AuthProvider>().userData?.id ?? 'unknown',
+      teacherId: teacherId, // Sử dụng FirebaseAuth UID để pass Firestore rules
       requestDate: DateTime.now(),
+      departmentId: departmentId, // Thêm departmentId để phê duyệt
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    context.read<LessonProvider>().submitLeaveRequest(leaveRequest);
+    try {
+      await context.read<LessonProvider>().submitLeaveRequest(leaveRequest);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã gửi đăng ký thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã gửi đăng ký thành công'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    // Reset form
-    setState(() {
-      _selectedLessonId = '';
-      _registrationType = 'leave';
-      _selectedReason = '';
-      _makeupDate = null;
-      _notesController.clear();
-    });
+        // Reset form
+        setState(() {
+          _selectedLessonId = '';
+          _registrationType = 'leave';
+          _selectedReason = '';
+          _makeupDate = null;
+          _notesController.clear();
+        });
+      }
+    } catch (e) {
+      print('Error submitting leave request: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi gửi đăng ký: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Color _getStatusColor(String status) {

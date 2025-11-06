@@ -25,6 +25,7 @@ class LeaveRequest {
   final DateTime? approvedDate;
   final String? roomId; // ID của phòng học đã chọn (cho dạy bù)
   final String? roomName; // Tên phòng học (để hiển thị)
+  final String? departmentId; // ID của khoa/phòng ban (để phê duyệt)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -46,6 +47,7 @@ class LeaveRequest {
     this.approvedDate,
     this.roomId,
     this.roomName,
+    this.departmentId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -89,6 +91,7 @@ class LeaveRequest {
           : null,
       roomId: map['roomId']?.toString(),
       roomName: map['roomName']?.toString(),
+      departmentId: map['departmentId']?.toString(),
       createdAt: map['createdAt'] != null 
           ? (map['createdAt'] is DateTime 
               ? map['createdAt'] as DateTime 
@@ -108,7 +111,7 @@ class LeaveRequest {
       'lessonId': lessonId,
       'type': type,
       'reason': reason,
-      'makeupDate': makeupDate,
+      'makeupDate': makeupDate != null ? Timestamp.fromDate(makeupDate!) : null,
       'startTime': startTime,
       'endTime': endTime,
       'additionalNotes': additionalNotes,
@@ -117,12 +120,13 @@ class LeaveRequest {
       'attachments': attachments,
       'approverId': approverId,
       'approverNotes': approverNotes,
-      'requestDate': requestDate,
-      'approvedDate': approvedDate,
+      'requestDate': Timestamp.fromDate(requestDate),
+      'approvedDate': approvedDate != null ? Timestamp.fromDate(approvedDate!) : null,
       'roomId': roomId,
       'roomName': roomName,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'departmentId': departmentId,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
@@ -152,6 +156,7 @@ class LeaveRequest {
     DateTime? approvedDate,
     String? roomId,
     String? roomName,
+    String? departmentId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -173,6 +178,7 @@ class LeaveRequest {
       approvedDate: approvedDate ?? this.approvedDate,
       roomId: roomId ?? this.roomId,
       roomName: roomName ?? this.roomName,
+      departmentId: departmentId ?? this.departmentId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
