@@ -1,7 +1,0 @@
-[
-  {"id":"subj_001","name":"Lập trình Flutter","code":"FLUTTER001","departmentId":"dept_001","credits":3,"totalHours":45,"description":"Flutter mobile","prerequisites":"Java","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
-  {"id":"subj_002","name":"Cơ sở dữ liệu","code":"CSDL001","departmentId":"dept_001","credits":3,"totalHours":45,"description":"Database","prerequisites":"Tin học cơ sở","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
-  {"id":"subj_003","name":"Phát triển Web","code":"WEB001","departmentId":"dept_001","credits":3,"totalHours":45,"description":"Web dev","prerequisites":"HTML/CSS/JS","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}}
-]
-
-

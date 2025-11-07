@@ -83,15 +83,6 @@ flutter:
   uses-material-design: true
   assets:
       - assets/images/
-      - seed/users.json
-      - seed/departments.json
-      - seed/subjects.json
-      - seed/classrooms.json
-      - seed/rooms.json
-      - seed/teachingAssignments.json
-      - seed/schedules.json
-      - seed/attendance.json
-      - seed/leaveRequests.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

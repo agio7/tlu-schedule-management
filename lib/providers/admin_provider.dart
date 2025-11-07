@@ -7,12 +7,14 @@ import '../services/classroom_service.dart';
 import '../services/room_service.dart';
 import '../services/schedule_service.dart';
 import '../services/leave_request_service.dart';
+import '../services/semester_service.dart';
 import '../models/users.dart';
 import '../models/subjects.dart';
 import '../models/classrooms.dart';
 import '../models/rooms.dart';
 import '../models/schedules.dart';
 import '../models/leave_requests.dart';
+import '../models/semesters.dart';
 
 class AdminProvider with ChangeNotifier {
   Map<String, int> _dashboardStats = {};
@@ -20,6 +22,7 @@ class AdminProvider with ChangeNotifier {
   List<Subjects> _subjects = [];
   List<Classrooms> _classrooms = [];
   List<Rooms> _rooms = [];
+  List<Semesters> _semesters = [];
   List<Schedules> _schedules = [];
   List<LeaveRequests> _leaveRequests = [];
   List<LeaveRequests> _pendingLeaveRequests = [];
@@ -33,6 +36,7 @@ class AdminProvider with ChangeNotifier {
   List<Subjects> get subjects => _subjects;
   List<Classrooms> get classrooms => _classrooms;
   List<Rooms> get rooms => _rooms;
+  List<Semesters> get semesters => _semesters;
   List<Schedules> get schedules => _schedules;
   List<LeaveRequests> get leaveRequests => _leaveRequests;
   List<LeaveRequests> get pendingLeaveRequests => _pendingLeaveRequests;
@@ -603,6 +607,100 @@ class AdminProvider with ChangeNotifier {
     } catch (e) {
       _setError('Không thể xóa phòng học: $e');
       print('❌ Error deleting room: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Load semesters
+  Future<void> loadSemesters() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      print('📅 AdminProvider: Đang load semesters...');
+      SemesterService.getSemestersStream().listen((semesters) {
+        _semesters = semesters;
+        print('✅ AdminProvider: Loaded ${semesters.length} semesters');
+        _setLoading(false);
+      }, onError: (e) {
+        _setError('Không thể tải danh sách học kỳ: $e');
+        print('❌ Error loading semesters: $e');
+        _setLoading(false);
+      });
+    } catch (e) {
+      _setError('Không thể tải danh sách học kỳ: $e');
+      print('❌ Error setting up semesters stream: $e');
+      _setLoading(false);
+    }
+  }
+
+  // Add semester
+  Future<void> addSemester(Map<String, dynamic> semesterData) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      final semester = Semesters(
+        id: '', // Will be set by service
+        name: semesterData['name'] ?? '',
+        startDate: semesterData['startDate'] as DateTime,
+        endDate: semesterData['endDate'] as DateTime,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await SemesterService.addSemester(semester);
+      await loadSemesters();
+      
+      print('✅ AdminProvider: Added semester successfully');
+    } catch (e) {
+      _setError('Không thể thêm học kỳ: $e');
+      print('❌ Error adding semester: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update semester
+  Future<void> updateSemester(String semesterId, Map<String, dynamic> semesterData) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      final semester = Semesters(
+        id: semesterId,
+        name: semesterData['name'] ?? '',
+        startDate: semesterData['startDate'] as DateTime,
+        endDate: semesterData['endDate'] as DateTime,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await SemesterService.updateSemester(semesterId, semester);
+      await loadSemesters();
+      
+      print('✅ AdminProvider: Updated semester successfully');
+    } catch (e) {
+      _setError('Không thể cập nhật học kỳ: $e');
+      print('❌ Error updating semester: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Delete semester
+  Future<void> deleteSemester(String semesterId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      await SemesterService.deleteSemester(semesterId);
+      await loadSemesters();
+      
+      print('✅ AdminProvider: Deleted semester successfully');
+    } catch (e) {
+      _setError('Không thể xóa học kỳ: $e');
+      print('❌ Error deleting semester: $e');
     } finally {
       _setLoading(false);
     }

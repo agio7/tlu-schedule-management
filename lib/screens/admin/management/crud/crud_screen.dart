@@ -5,6 +5,7 @@ import '../../../../models/users.dart';
 import '../../../../models/subjects.dart';
 import '../../../../models/classrooms.dart';
 import '../../../../models/rooms.dart';
+import '../../../../models/semesters.dart';
 
 class CRUDScreen extends StatefulWidget {
   final String type;
@@ -53,6 +54,9 @@ class _CRUDScreenState extends State<CRUDScreen> {
           break;
         case 'Phòng học':
           await adminProvider.loadRooms();
+          break;
+        case 'Học kỳ':
+          await adminProvider.loadSemesters();
           break;
       }
     } catch (e) {
@@ -254,6 +258,9 @@ class _CRUDScreenState extends State<CRUDScreen> {
       case 'Phòng học':
         items = adminProvider.rooms;
         break;
+      case 'Học kỳ':
+        items = adminProvider.semesters;
+        break;
     }
 
     if (_searchController.text.isEmpty) {
@@ -286,6 +293,9 @@ class _CRUDScreenState extends State<CRUDScreen> {
                  (room.type?.toLowerCase().contains(query) ?? false) ||
                  (room.building?.toLowerCase().contains(query) ?? false) ||
                  (room.description?.toLowerCase().contains(query) ?? false);
+        case 'Học kỳ':
+          final semester = item as Semesters;
+          return semester.name.toLowerCase().contains(query);
         default:
           return false;
       }
@@ -302,6 +312,8 @@ class _CRUDScreenState extends State<CRUDScreen> {
         return (item as Classrooms).name;
       case 'Phòng học':
         return (item as Rooms).name;
+      case 'Học kỳ':
+        return (item as Semesters).name;
       default:
         return '';
     }
@@ -321,6 +333,11 @@ class _CRUDScreenState extends State<CRUDScreen> {
       case 'Phòng học':
         final room = item as Rooms;
         return '${room.capacity} chỗ - ${room.type} - Tầng ${room.floor}';
+      case 'Học kỳ':
+        final semester = item as Semesters;
+        final startDate = '${semester.startDate.day}/${semester.startDate.month}/${semester.startDate.year}';
+        final endDate = '${semester.endDate.day}/${semester.endDate.month}/${semester.endDate.year}';
+        return '$startDate - $endDate';
       default:
         return '';
     }
@@ -336,6 +353,8 @@ class _CRUDScreenState extends State<CRUDScreen> {
         return Icons.school;
       case 'Phòng học':
         return Icons.room;
+      case 'Học kỳ':
+        return Icons.calendar_month;
       default:
         return Icons.category;
     }
@@ -406,7 +425,7 @@ class _CRUDScreenState extends State<CRUDScreen> {
       content: SingleChildScrollView(
         child: Form(
           key: formKey,
-          child: _buildFormFields(controllers),
+          child: _buildFormFields(controllers, dialogContext),
         ),
       ),
       actions: [
@@ -470,12 +489,27 @@ class _CRUDScreenState extends State<CRUDScreen> {
         controllers['description'] = TextEditingController(text: room?.description ?? '');
         controllers['equipment'] = TextEditingController(text: room?.equipment?.join(', ') ?? '');
         break;
+      case 'Học kỳ':
+        final semester = item as Semesters?;
+        controllers['name'] = TextEditingController(text: semester?.name ?? '');
+        if (semester != null) {
+          controllers['startDate'] = TextEditingController(
+            text: '${semester.startDate.day}/${semester.startDate.month}/${semester.startDate.year}'
+          );
+          controllers['endDate'] = TextEditingController(
+            text: '${semester.endDate.day}/${semester.endDate.month}/${semester.endDate.year}'
+          );
+        } else {
+          controllers['startDate'] = TextEditingController();
+          controllers['endDate'] = TextEditingController();
+        }
+        break;
     }
     
     return controllers;
   }
 
-  Widget _buildFormFields(Map<String, TextEditingController> controllers) {
+  Widget _buildFormFields(Map<String, TextEditingController> controllers, BuildContext context) {
     switch (widget.type) {
       case 'Giảng viên':
         return Column(
@@ -824,9 +858,81 @@ class _CRUDScreenState extends State<CRUDScreen> {
             ),
           ],
         );
+      case 'Học kỳ':
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: controllers['name'],
+              decoration: const InputDecoration(
+                labelText: 'Tên học kỳ *',
+                border: OutlineInputBorder(),
+                hintText: 'Học kỳ 1 - 2024',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Vui lòng nhập tên học kỳ';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildDatePickerField(
+              context,
+              controllers['startDate']!,
+              'Ngày bắt đầu *',
+              (date) {
+                controllers['startDate']!.text = '${date.day}/${date.month}/${date.year}';
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildDatePickerField(
+              context,
+              controllers['endDate']!,
+              'Ngày kết thúc *',
+              (date) {
+                controllers['endDate']!.text = '${date.day}/${date.month}/${date.year}';
+              },
+            ),
+          ],
+        );
       default:
         return const Text('Form không được hỗ trợ');
     }
+  }
+
+  Widget _buildDatePickerField(
+    BuildContext context,
+    TextEditingController controller,
+    String label,
+    Function(DateTime) onDateSelected,
+  ) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        suffixIcon: const Icon(Icons.calendar_today),
+      ),
+      readOnly: true,
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+        );
+        if (date != null) {
+          onDateSelected(date);
+        }
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Vui lòng chọn ngày';
+        }
+        return null;
+      },
+    );
   }
 
   Map<String, dynamic> _getFormData(Map<String, TextEditingController> controllers) {
@@ -871,6 +977,24 @@ class _CRUDScreenState extends State<CRUDScreen> {
         data['description'] = controllers['description']!.text;
         data['isAvailable'] = true;
         break;
+      case 'Học kỳ':
+        data['name'] = controllers['name']!.text;
+        // Parse date từ format dd/MM/yyyy
+        final startDateStr = controllers['startDate']!.text;
+        final endDateStr = controllers['endDate']!.text;
+        final startParts = startDateStr.split('/');
+        final endParts = endDateStr.split('/');
+        data['startDate'] = DateTime(
+          int.parse(startParts[2]),
+          int.parse(startParts[1]),
+          int.parse(startParts[0]),
+        );
+        data['endDate'] = DateTime(
+          int.parse(endParts[2]),
+          int.parse(endParts[1]),
+          int.parse(endParts[0]),
+        );
+        break;
     }
     
     return data;
@@ -897,6 +1021,9 @@ class _CRUDScreenState extends State<CRUDScreen> {
           break;
         case 'Phòng học':
           await adminProvider.addRoom(formData);
+          break;
+        case 'Học kỳ':
+          await adminProvider.addSemester(formData);
           break;
       }
 
@@ -942,6 +1069,10 @@ class _CRUDScreenState extends State<CRUDScreen> {
           final room = item as Rooms;
           await adminProvider.updateRoom(room.id, formData);
           break;
+        case 'Học kỳ':
+          final semester = item as Semesters;
+          await adminProvider.updateSemester(semester.id, formData);
+          break;
       }
 
       if (mounted) {
@@ -985,6 +1116,10 @@ class _CRUDScreenState extends State<CRUDScreen> {
         case 'Phòng học':
           final room = item as Rooms;
           await adminProvider.deleteRoom(room.id);
+          break;
+        case 'Học kỳ':
+          final semester = item as Semesters;
+          await adminProvider.deleteSemester(semester.id);
           break;
       }
 

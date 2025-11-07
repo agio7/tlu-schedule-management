@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import '../../../providers/admin_provider.dart';
+import '../../../models/semesters.dart';
+import '../../../services/csv_import_service.dart';
 
 class ScheduleManagementScreen extends StatefulWidget {
   const ScheduleManagementScreen({super.key});
@@ -13,6 +19,18 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
   String _selectedSubject = 'Tất cả';
   String _selectedRoom = 'Tất cả';
   DateTime _selectedDate = DateTime.now();
+  Semesters? _selectedSemester;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSemesters();
+  }
+
+  void _loadSemesters() {
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    adminProvider.loadSemesters();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +52,6 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
                   Expanded(
                     child: _buildFilterDropdown('Giảng viên', _selectedTeacher, [
                       'Tất cả',
-                      'Nguyễn Văn A',
-                      'Trần Thị B',
-                      'Lê Văn C',
                     ], (value) {
                       setState(() => _selectedTeacher = value!);
                     }),
@@ -45,9 +60,6 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
                   Expanded(
                     child: _buildFilterDropdown('Lớp học', _selectedClass, [
                       'Tất cả',
-                      'CNTT K66',
-                      'CNTT K67',
-                      'CNTT K68',
                     ], (value) {
                       setState(() => _selectedClass = value!);
                     }),
@@ -60,9 +72,6 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
                   Expanded(
                     child: _buildFilterDropdown('Môn học', _selectedSubject, [
                       'Tất cả',
-                      'Toán học',
-                      'Lập trình',
-                      'Cơ sở dữ liệu',
                     ], (value) {
                       setState(() => _selectedSubject = value!);
                     }),
@@ -71,9 +80,6 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
                   Expanded(
                     child: _buildFilterDropdown('Phòng học', _selectedRoom, [
                       'Tất cả',
-                      'A101',
-                      'A102',
-                      'A103',
                     ], (value) {
                       setState(() => _selectedRoom = value!);
                     }),
@@ -84,58 +90,110 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
           ),
         ),
         
-        // Header với nút Import/Sinh lịch
+        // Header với dropdown Học kỳ và nút Import/Sinh lịch
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded( // Thêm Expanded để tránh overflow
-                child: Text(
-                  'Lịch trình ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: const TextStyle(
-                    fontSize: 18, // Giảm từ 20 xuống 18
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1976D2),
+          child: Consumer<AdminProvider>(
+            builder: (context, adminProvider, child) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Lịch trình ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1976D2),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showImportDialog(),
+                          icon: const Icon(Icons.upload_file, size: 18),
+                          label: const Text('Import/Sinh lịch', style: TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis, // Thêm overflow handling
-                ),
-              ),
-              const SizedBox(width: 8), // Thêm spacing
-              Flexible( // Thay ElevatedButton.icon bằng Flexible
-                child: ElevatedButton.icon(
-                  onPressed: () => _showImportDialog(),
-                  icon: const Icon(Icons.upload_file, size: 18), // Giảm icon size
-                  label: const Text('Import/Sinh lịch', style: TextStyle(fontSize: 12)), // Giảm font size
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Giảm padding
+                  const SizedBox(height: 12),
+                  // Dropdown chọn học kỳ
+                  Row(
+                    children: [
+                      const Text(
+                        'Học kỳ: ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1976D2),
+                        ),
+                      ),
+                      Expanded(
+                        child: DropdownButtonFormField<Semesters>(
+                          value: _selectedSemester,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            hintText: 'Chọn học kỳ *',
+                            errorText: _selectedSemester == null ? 'Vui lòng chọn học kỳ' : null,
+                          ),
+                          items: adminProvider.semesters.map((semester) {
+                            return DropdownMenuItem<Semesters>(
+                              value: semester,
+                              child: Text(
+                                semester.name,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (semester) {
+                            setState(() {
+                              _selectedSemester = semester;
+                            });
+                            if (semester != null) {
+                              print('✅ Đã chọn học kỳ: ${semester.name}');
+                              print('   - ID: ${semester.id}');
+                              print('   - Start Date: ${semester.startDate}');
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Vui lòng chọn học kỳ';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ),
         
-        // Lịch trình
+        // Lịch trình (không còn dữ liệu ảo)
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 8,
-            itemBuilder: (context, index) {
-              final schedules = [
-                {'time': '7:30-9:00', 'teacher': 'Nguyễn Văn A', 'subject': 'Toán học', 'class': 'CNTT K66', 'room': 'A101', 'status': 'pending'},
-                {'time': '9:30-11:00', 'teacher': 'Trần Thị B', 'subject': 'Lập trình', 'class': 'CNTT K67', 'room': 'A102', 'status': 'completed'},
-                {'time': '13:30-15:00', 'teacher': 'Lê Văn C', 'subject': 'Cơ sở dữ liệu', 'class': 'CNTT K68', 'room': 'A103', 'status': 'absent'},
-                {'time': '15:30-17:00', 'teacher': 'Nguyễn Văn A', 'subject': 'Toán học', 'class': 'CNTT K66', 'room': 'A101', 'status': 'makeup'},
-                {'time': '7:30-9:00', 'teacher': 'Trần Thị B', 'subject': 'Lập trình', 'class': 'CNTT K67', 'room': 'A102', 'status': 'pending'},
-                {'time': '9:30-11:00', 'teacher': 'Lê Văn C', 'subject': 'Cơ sở dữ liệu', 'class': 'CNTT K68', 'room': 'A103', 'status': 'completed'},
-                {'time': '13:30-15:00', 'teacher': 'Nguyễn Văn A', 'subject': 'Toán học', 'class': 'CNTT K66', 'room': 'A101', 'status': 'pending'},
-                {'time': '15:30-17:00', 'teacher': 'Trần Thị B', 'subject': 'Lập trình', 'class': 'CNTT K67', 'room': 'A102', 'status': 'makeup'},
-              ];
-              
-              final schedule = schedules[index];
-              return _buildScheduleCard(schedule, context);
-            },
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.event_busy, size: 48, color: Colors.grey),
+                SizedBox(height: 8),
+                Text('Chưa có lịch trình', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
           ),
         ),
       ],
@@ -258,37 +316,21 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
   }
 
   void _showImportDialog() {
+    if (_selectedSemester == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn học kỳ trước khi nhập file'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import/Sinh lịch trình'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.upload_file, color: Color(0xFF1976D2)),
-              title: const Text('Nhập file phân công'),
-              subtitle: const Text('Upload file Excel/CSV'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng upload file đang phát triển')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.auto_awesome, color: Color(0xFF1976D2)),
-              title: const Text('Tự động sinh lịch trình'),
-              subtitle: const Text('Sử dụng thuật toán AI'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng AI đang phát triển')),
-                );
-              },
-            ),
-          ],
-        ),
+      builder: (dialogContext) => _ImportCsvDialog(
+        dialogContext: dialogContext,
+        selectedSemester: _selectedSemester!,
       ),
     );
   }
@@ -344,6 +386,246 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ImportCsvDialog extends StatefulWidget {
+  final BuildContext dialogContext;
+  final Semesters selectedSemester;
+  
+  const _ImportCsvDialog({
+    required this.dialogContext,
+    required this.selectedSemester,
+  });
+
+  @override
+  State<_ImportCsvDialog> createState() => _ImportCsvDialogState();
+}
+
+class _ImportCsvDialogState extends State<_ImportCsvDialog> {
+  String? _selectedFile;
+  String? _csvContent;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        // Đọc nội dung file CSV
+        final bytes = result.files.single.bytes!;
+        final content = utf8.decode(bytes);
+        
+        setState(() {
+          _selectedFile = result.files.single.name;
+          _csvContent = content;
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi khi chọn file: $e';
+      });
+    }
+  }
+
+  Future<void> _confirmImport() async {
+    if (_csvContent == null || _csvContent!.isEmpty) {
+      setState(() {
+        _errorMessage = 'Vui lòng chọn file CSV';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await CsvImportService.importCsvAndGenerateSchedules(
+        csvContent: _csvContent!,
+        semesterId: widget.selectedSemester.id,
+        semesterStartDate: widget.selectedSemester.startDate,
+      );
+
+      if (mounted) {
+        if (result['success'] == true) {
+          Navigator.pop(widget.dialogContext);
+          ScaffoldMessenger.of(widget.dialogContext).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Nhập thành công!'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = result['message'] ?? 'Lỗi khi nhập file';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Lỗi khi nhập file: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Import lịch trình từ CSV'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Hiển thị học kỳ đã chọn
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_month, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Học kỳ đã chọn:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          widget.selectedSemester.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1976D2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Nút chọn file CSV
+            ElevatedButton.icon(
+              onPressed: _isLoading ? null : _pickFile,
+              icon: const Icon(Icons.upload_file),
+              label: Text(_selectedFile == null ? 'Chọn File CSV' : 'Chọn File Khác'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1976D2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+            
+            // Hiển thị tên file đã chọn
+            if (_selectedFile != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedFile!,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            // Hiển thị lỗi
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 8),
+            Text(
+              'Yêu cầu file CSV có các cột: MaLHP, MaMonHoc, MaGV, MaLopSH, MaPhong, SoBuoi, LichHocChuoi',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(widget.dialogContext),
+          child: const Text('Hủy'),
+        ),
+        ElevatedButton(
+          onPressed: (_isLoading || _csvContent == null) ? null : _confirmImport,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1976D2),
+            foregroundColor: Colors.white,
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Xác nhận Nhập'),
+        ),
+      ],
     );
   }
 }
