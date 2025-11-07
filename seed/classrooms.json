@@ -1,0 +1,6 @@
+[
+  {"id":"class_001","name":"Lớp PhonDenRoi","code":"PhonDenRoi","departmentId":"dept_001","academicYear":2024,"semester":"HK1","studentCount":45,"createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"class_002","name":"Lớp CNTT K67","code":"CNTT67","departmentId":"dept_001","academicYear":2024,"semester":"HK1","studentCount":42,"createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}}
+]
+
+

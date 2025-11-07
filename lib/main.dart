@@ -17,30 +17,20 @@ import 'auth/login_screen.dart';
 
 import 'providers/lesson_provider.dart';
 import 'providers/auth_provider.dart';
-// ĐÃ THÊM DÒNG NÀY ĐỂ SỬA LỖI
 import 'providers/admin_provider.dart';
 
 void main() async {
-  // Đảm bảo Flutter đã sẵn sàng
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Đây là phần khởi tạo quan trọng từ nhánh 'Thanh'
   try {
-    // Khởi tạo định dạng ngày tháng tiếng Việt
     await initializeDateFormatting('vi', null);
-
-    // Khởi tạo Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-
     print('Firebase initialized successfully');
   } catch (e) {
     print('Error initializing app: $e');
-    // Vẫn chạy app ngay cả khi Firebase lỗi
   }
 
-  // Chạy app
   runApp(const MyApp());
 }
 
@@ -53,7 +43,6 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LessonProvider()),
-        // Đã thêm AdminProvider từ ý định của nhánh HEAD
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: Consumer<AuthProvider>(

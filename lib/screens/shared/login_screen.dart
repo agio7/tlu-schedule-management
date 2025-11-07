@@ -16,6 +16,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+<<<<<<< HEAD
+=======
+  // control visibility of password
+  bool _obscurePassword = true;
+>>>>>>> Hải
 
   @override
   void dispose() {
@@ -122,15 +127,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
 
+<<<<<<< HEAD
                             // Password Field
                             TextFormField(
                               controller: _passwordController,
                               obscureText: true,
+=======
+                            // Password Field with visibility toggle
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+>>>>>>> Hải
                               decoration: InputDecoration(
                                 labelText: 'Mật khẩu',
                                 prefixIcon: const Icon(Icons.lock),
                                 border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12)),
+<<<<<<< HEAD
+=======
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+>>>>>>> Hải
                               ),
                               // 1. THÊM HÀNH ĐỘNG KHI GÕ: Xóa lỗi cũ
                               onChanged: (_) => auth.clearError(),
@@ -158,6 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             // Login Button
                             SizedBox(
+<<<<<<< HEAD
                               width: double.infinity, // Chiều rộng toàn màn hình
                               height: 50, // Chiều cao nút
                               child: ElevatedButton(
@@ -200,6 +228,38 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
 
+=======
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                // Nút sẽ bị vô hiệu hóa khi đang tải
+                                onPressed: auth.isLoading
+                                    ? null
+                                    : () => _handleLogin(auth),
+                                child: auth.isLoading
+                                    ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                    : const Text('Đăng nhập',
+                                    style: TextStyle(fontSize: 16)),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: auth.isLoading
+                                    ? null
+                                    : () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const ForgotPasswordScreen(),
+                                          ),
+                                        );
+                                      },
+                                child: const Text('Quên mật khẩu?'),
+                              ),
+                            ),
+>>>>>>> Hải
                           ],
                         ),
                       ),

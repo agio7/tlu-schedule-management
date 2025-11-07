@@ -1,0 +1,7 @@
+[
+  {"id":"dept_001","name":"Khoa Công nghệ Thông tin","code":"CNTT","headId":"user_002","description":"Khoa CNTT - TLU","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"dept_002","name":"Khoa Kỹ thuật Xây dựng","code":"KTXD","headId":null,"description":"Khoa KTXD - TLU","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}},
+  {"id":"dept_003","name":"Khoa Kinh tế","code":"KT","headId":null,"description":"Khoa Kinh tế - TLU","createdAt":{"_seconds":0,"_nanoseconds":0},"updatedAt":{"_seconds":0,"_nanoseconds":0}}
+]
+
+

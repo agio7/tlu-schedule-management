@@ -105,8 +105,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+<<<<<<< HEAD
         const Text('Nhận mã qua tin nhắn (SMS)',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+=======
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() => _method = ResetMethod.none),
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Quay lại',
+            ),
+            const Text('Nhận mã qua tin nhắn (SMS)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+>>>>>>> Hải
         const SizedBox(height: 8),
         const Text('Nhập số điện thoại của bạn, chúng tôi sẽ gửi mã xác minh.'),
         const SizedBox(height: 12),
@@ -138,8 +152,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+<<<<<<< HEAD
         const Text('Nhận mã qua email dự phòng',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+=======
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() => _method = ResetMethod.none),
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Quay lại',
+            ),
+            const Text('Nhận mã qua email dự phòng',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+>>>>>>> Hải
         const SizedBox(height: 8),
         const Text('Nhập email của bạn, chúng tôi sẽ gửi liên kết đặt lại mật khẩu.'),
         const SizedBox(height: 12),

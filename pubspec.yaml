@@ -31,18 +31,16 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   
   # Navigation
-  go_router: ^17.0.0
+  go_router: ^14.2.7
   
   # State management
   provider: ^6.1.2
   
   # Date and time
-  intl: ^0.20.2
+  intl: ^0.19.0
   
   # HTTP requests
   http: ^1.2.2
@@ -50,14 +48,12 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.3
 
-
-
+  
   # HTTP & API
-
   dio: ^5.4.3+1
-
+  
   # Local Storage
-
+  shared_preferences: ^2.2.3
   sqflite: ^2.3.3+1
 
   # UI Components
@@ -65,17 +61,20 @@ dependencies:
   cached_network_image: ^3.3.1
 
   # Date & Time
-
   table_calendar: ^3.1.1 # Cũng nên nâng cấp gói này
 
   # Firebase - ĐÃ CẬP NHẬT PHIÊN BẢN
-  firebase_core: ^4.2.1
-  cloud_firestore: ^6.1.0
-  firebase_auth: ^6.1.2
+  firebase_core: ^2.31.0
+  cloud_firestore: ^4.17.3
+  firebase_auth: ^4.19.5
   
   # File handling
-  file_picker: ^10.3.3
+  file_picker: ^8.0.0+1
   
+  # Needed by department_head_simple_screen.dart
+  fl_chart: ^0.64.0
+  google_fonts: ^4.0.4
+  characters: ^1.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -99,6 +98,15 @@ flutter:
   uses-material-design: true
   assets:
       - assets/images/
+      - seed/users.json
+      - seed/departments.json
+      - seed/subjects.json
+      - seed/classrooms.json
+      - seed/rooms.json
+      - seed/teachingAssignments.json
+      - seed/schedules.json
+      - seed/attendance.json
+      - seed/leaveRequests.json
 
 
   # To add assets to your application, add an assets section, like this:

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "user_001",
+    "email": "admin@tlu.edu.vn",
+    "fullName": "Nguyễn Văn Admin",
+    "role": "admin",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456789",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "user_002",
+    "email": "truongkhoa@tlu.edu.vn",
+    "fullName": "Trần Văn Trưởng Khoa",
+    "role": "department_head",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456788",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "user_003",
+    "email": "giangvien@tlu.edu.vn",
+    "fullName": "Lê Văn Giảng Viên",
+    "role": "teacher",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456787",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "user_004",
+    "email": "demo@tlu.edu.vn",
+    "fullName": "Demo User",
+    "role": "teacher",
+    "departmentId": "dept_001",
+    "phoneNumber": "0123456786",
+    "avatar": "",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
