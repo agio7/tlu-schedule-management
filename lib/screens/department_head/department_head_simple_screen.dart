@@ -8,7 +8,6 @@ import '../../providers/hod_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/hod_models.dart';
 import '../shared/login_screen.dart';
-import '../../scripts/fix_user_department.dart';
 
 // Department Head Dashboard - Full Implementation
 class DepartmentHeadSimpleScreen extends StatefulWidget {
@@ -137,9 +136,6 @@ class _DepartmentHeadSimpleScreenState extends State<DepartmentHeadSimpleScreen>
                                 ),
                               ),
                             );
-
-                            // Gọi script để fix
-                            await fixDepartmentForUser(userData.email);
 
                             // Đóng dialog
                             if (mounted) {
