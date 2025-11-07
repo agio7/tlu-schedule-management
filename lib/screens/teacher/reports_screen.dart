@@ -342,7 +342,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        ...leaveRequests.take(5).map((request) {
+                        ...leaveRequests.map((request) {
                           final lesson = lessonProvider.getLessonById(request.lessonId);
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
