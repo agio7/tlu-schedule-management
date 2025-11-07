@@ -1872,7 +1872,7 @@ class _LeaveMakeupStatisticsPreview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Tỷ lệ nghỉ dạy
-        Text('Tỷ lệ nghỉ dạy (Đã duyệt)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text('Tỷ lệ nghỉ dạy', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         ...leaveRateData.take(4).map((data) {
           return Padding(
@@ -1902,7 +1902,7 @@ class _LeaveMakeupStatisticsPreview extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Tỷ lệ dạy bù
-        Text('Tỷ lệ dạy bù (Đã duyệt)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text('Tỷ lệ dạy bù', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         ...makeupRateData.take(4).map((data) {
           return Padding(

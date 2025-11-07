@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
-// import '../admin/admin_dashboard.dart'; // Xóa import này
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -50,25 +49,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            // Đã xóa nút AdminDashboard tại đây
-            // Nếu muốn thêm nút tới giao diện trưởng bộ môn thì thay bằng dòng dưới:
-            // ElevatedButton(
-            //   onPressed: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => const DepartmentHeadDashboard(),
-            //       ),
-            //     );
-            //   },
-            //   style: ElevatedButton.styleFrom(
-            //     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            //   ),
-            //   child: const Text(
-            //     'Vào Dashboard Trưởng bộ môn',
-            //     style: TextStyle(fontSize: 16),
-            //   ),
-            // ),
+
           ],
         ),
       ),

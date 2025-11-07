@@ -220,7 +220,7 @@ class AppState extends ChangeNotifier {
       await _loadMakeupRequests();
 
       _subjectNames = _subjectCache.values.map((s) => s.name).where((e) => e.isNotEmpty).toSet().toList();
-
+      _generateAlerts();
       notifyListeners();
 
     } catch (e) {
@@ -604,7 +604,75 @@ class AppState extends ChangeNotifier {
     _makeups = allMakeups;
   }
 
+  // --- [HÀM MỚI] Dùng để tạo cảnh báo tự động ---
+  void _generateAlerts() {
+    print('🔄 AppState: Generating alerts...');
+    final newAlerts = <AlertItem>[];
 
+    // --- 1. Cảnh báo "Chậm tiến độ giảng dạy" ---
+    // (Logic: Dạy dưới 25% kế hoạch)
+    const double progressThreshold = 0.25;
+    for (final lecturer in _lecturers) {
+      if (lecturer.hoursPlanned > 0) {
+        final progress = lecturer.hoursActual / lecturer.hoursPlanned;
+        // [SỬA LỖI] Chỉ cảnh báo nếu < 25% VÀ giảng viên đó CÓ giờ kế hoạch
+        if (progress < progressThreshold && lecturer.hoursPlanned > 0) {
+          newAlerts.add(AlertItem(
+            type: AlertType.delay,
+            detail: 'Giảng viên ${lecturer.name} chậm tiến độ, mới dạy ${lecturer.hoursActual}/${lecturer.hoursPlanned} giờ.',
+            date: DateTime.now(),
+            priority: 'Cao',
+            state: AlertState.unresolved,
+          ));
+        }
+      }
+    }
+
+    // --- 2. Cảnh báo "Nghỉ dạy chưa có lịch bù" ---
+    // (Logic: Tìm đơn nghỉ "Đã duyệt" nhưng không có đơn bù tương ứng)
+    final approvedLeaves = _leaveRequests.where((r) => r.status == RequestStatus.approved);
+    for (final leave in approvedLeaves) {
+      // Tìm xem có đơn bù nào cho giảng viên này, vào ngày này, mà không bị từ chối không
+      final hasMakeup = _makeups.any((makeup) =>
+      makeup.lecturer == leave.lecturer &&
+          makeup.originalDate.isAtSameMomentAs(leave.date) &&
+          makeup.status != RequestStatus.rejected
+      );
+
+      if (!hasMakeup) {
+        newAlerts.add(AlertItem(
+          type: AlertType.noMakeup,
+          detail: 'Giảng viên ${leave.lecturer} nghỉ ngày ${dmy(leave.date)} chưa có lịch bù.',
+          date: DateTime.now(),
+          priority: 'Trung bình',
+          state: AlertState.unresolved,
+        ));
+      }
+    }
+
+    // --- 3. Cảnh báo "Vượt số buổi nghỉ quy định" ---
+    // (Logic: Giảng viên nghỉ quá 2 buổi)
+    const int leaveLimit = 2;
+    final leaveCounts = <String, int>{};
+    for (final leave in approvedLeaves) {
+      leaveCounts[leave.lecturer] = (leaveCounts[leave.lecturer] ?? 0) + 1;
+    }
+
+    leaveCounts.forEach((lecturerName, count) {
+      if (count > leaveLimit) {
+        newAlerts.add(AlertItem(
+          type: AlertType.delay, // Dùng tạm type này
+          detail: 'Giảng viên $lecturerName đã nghỉ $count buổi, vượt mức quy định.',
+          date: DateTime.now(),
+          priority: 'Thấp',
+          state: AlertState.unresolved,
+        ));
+      }
+    });
+
+    _alerts = newAlerts;
+    print('✅ AppState: Generated ${newAlerts.length} alerts.');
+  }
   // --- Các hàm phê duyệt (Đã sửa) ---
 
   static const String HOD_APPROVER_ID = 'department_head';
