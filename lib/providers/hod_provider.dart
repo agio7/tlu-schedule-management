@@ -229,6 +229,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // [DÁN ĐÈ HÀM NÀY: providers/hod_provider.dart]
   Future<List<Lecturer>> _convertUsersToLecturers(List<Users> users) async {
     final lecturers = <Lecturer>[];
     final allLessons = _lessonCache.values.toList();
@@ -237,13 +238,17 @@ class AppState extends ChangeNotifier {
     for (final user in users) {
       int hoursActual = 0;
       int hoursPlanned = 0;
-      final docIdKey = user.id;
-      final employeeIdKey = user.employeeId;
+
+      // [SỬA LỖI] Lấy đúng 2 key
+      final docIdKey = user.id; // ID tài liệu (GNAZ...)
+      final employeeIdKey = user.employeeId; // ID tùy chỉnh ("teacher_001")
+
       String subjectName = user.specialization ?? '';
 
       // 1. Tính giờ THỰC TẾ
       try {
         final lessonsTaught = allLessons.where((l) =>
+        // So sánh với CẢ HAI key
         (l.teacherId == docIdKey || l.teacherId == employeeIdKey) &&
             l.status == 'completed'
         ).toList();
@@ -266,16 +271,18 @@ class AppState extends ChangeNotifier {
         print('Error calculating ACTUAL hours for ${user.fullName}: $e');
       }
 
-      // 2. Tính giờ KẾ HOẠCH
+      // 2. Tính giờ KẾ HOẠCH VÀ Tên môn học
       try {
+        // [SỬA LỖI] So sánh teacherId của CourseSection với CẢ HAI key
         final sectionsTaught = allCourseSections.where((s) =>
         s.teacherId == docIdKey || s.teacherId == employeeIdKey
         ).toList();
 
-        print('Found ${sectionsTaught.length} sections for ${user.fullName}');
+        final subjectNamesSet = <String>{};
 
         for (final section in sectionsTaught) {
           final scheduleString = section.scheduleString;
+
           final timeMatch = RegExp(r'(\d{1,2}:\d{2})-(\d{1,2}:\d{2})').firstMatch(scheduleString);
 
           if (timeMatch != null) {
@@ -285,22 +292,28 @@ class AppState extends ChangeNotifier {
             final sParts = startTime.split(':');
             final eParts = endTime.split(':');
 
-            final start = DateTime(2000, 1, 1, int.parse(sParts[0]), int.parse(sParts[1]));
-            final end = DateTime(2000, 1, 1, int.parse(eParts[0]), int.parse(eParts[1]));
-            final duration = end.difference(start);
+            if (sParts.length == 2 && eParts.length == 2) {
+              final start = DateTime(2000, 1, 1, int.parse(sParts[0]), int.parse(sParts[1]));
+              final end = DateTime(2000, 1, 1, int.parse(eParts[0]), int.parse(eParts[1]));
+              final duration = end.difference(start);
 
-            if (duration.inMinutes > 0) {
-              final sessionHours = (duration.inMinutes / 60).round();
-              hoursPlanned += sessionHours * 8; // Ghi đè 8 tuần
+              if (duration.inMinutes > 0) {
+                final sessionHours = (duration.inMinutes / 60).round();
+                hoursPlanned += sessionHours * 8; // Ghi đè 8 tuần
+              }
+            } else {
+              print('⚠️ AppState: RegExp failed to parse time from: $scheduleString');
             }
-          } else {
-            print('⚠️ AppState: RegExp failed to parse time from: $scheduleString');
+          }
+
+          final name = _subjectCache[section.subjectId]?.name;
+          if (name != null && name.isNotEmpty) {
+            subjectNamesSet.add(name);
           }
         }
 
-        if (sectionsTaught.isNotEmpty) {
-          final firstSubjectId = sectionsTaught.first.subjectId;
-          subjectName = _subjectCache[firstSubjectId]?.name ?? subjectName;
+        if (subjectNamesSet.isNotEmpty) {
+          subjectName = subjectNamesSet.join(', ');
         }
 
       } catch (e) {

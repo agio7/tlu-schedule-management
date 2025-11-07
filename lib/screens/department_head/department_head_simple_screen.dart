@@ -560,7 +560,6 @@ class _OverallLecturerBar extends StatelessWidget {
   }
 }
 
-
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
   @override
@@ -590,8 +589,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       });
     }
 
-    // Tạo danh sách các giá trị duy nhất cho Dropdown
+    // [SỬA LỖI] ĐỊNH NGHĨA allLecturers
     final allLecturers = ['Tất cả', ...state.lecturers.map((e) => e.name)];
+
+    // Tạo danh sách các giá trị duy nhất cho Dropdown Môn học
     final subjectNameByLower = <String, String>{};
     for (final s in state.schedules) {
       final raw = (s.subject).trim();
@@ -599,13 +600,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       final key = raw.toLowerCase();
       subjectNameByLower.putIfAbsent(key, () => raw);
     }
-    final allSubjects = ['Tất cả', ...subjectNameByLower.values];
+
+    // Tạo danh sách các môn học (loại bỏ "Không rõ")
+    final knownSubjects = subjectNameByLower.values.where((name) => name != 'Không rõ').toList();
+
+    // Tạo danh sách lọc mới
+    final allSubjects = ['Tất cả'];
+    if (subjectNameByLower.containsKey('không rõ')) {
+      allSubjects.add('Không rõ');
+    }
+    // Thêm tùy chọn lọc mới và các môn đã biết
+    if (knownSubjects.isNotEmpty) {
+      allSubjects.add('Môn học (Đã xác định)'); // <-- TÙY CHỌN MỚI
+      allSubjects.addAll(knownSubjects);
+    }
+
     final allStatuses = ['Tất cả', ...SessionStatus.values.map(statusLabel)];
 
 
     final filters = state.schedules.where((s) {
       final okLect = lecturer == 'Tất cả' || s.lecturer == lecturer;
-      final okSub = subject == 'Tất cả' || s.subject == subject;
+
+      // [SỬA LỖI] Thêm logic lọc mới
+      bool okSub;
+      if (subject == 'Tất cả') {
+        okSub = true;
+      } else if (subject == 'Môn học (Đã xác định)') {
+        okSub = s.subject != 'Không rõ'; // Chỉ hiển thị các môn KHÁC "Không rõ"
+      } else {
+        okSub = s.subject == subject; // Logic cũ (lọc theo "Không rõ" hoặc 1 môn cụ thể)
+      }
+
       final okStatus = status == 'Tất cả' || statusLabel(s.status) == status;
       return okLect && okSub && okStatus;
     }).toList();
@@ -625,7 +650,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: _Dropdown(
                       label: 'Giảng viên',
                       value: lecturer,
-                      values: allLecturers,
+                      values: allLecturers, // <-- ĐÃ SỬA LỖI
                       onChanged: (v) => setState(() => lecturer = v!),
                     ),
                   ),
@@ -673,7 +698,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   itemCount: filters.length,
                   itemBuilder: (context, i) {
                     final s = filters[i];
-                    final endDate = s.date.add(const Duration(days: 8 * 7));
+
+                    // Hiển thị 8 tuần
+                    final endDate = s.date.add(Duration(days: s.totalSessions * 7));
+
                     String timeString = s.session;
                     if (s.session.contains('(') && s.session.contains(')')) {
                       final match = RegExp(r'\(([^)]+)\)').firstMatch(s.session);
@@ -719,7 +747,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Lớp: ${s.className}',
+                                s.className, // Đã sửa lỗi "Lớp Lớp"
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey[700],
                                 ),
@@ -749,7 +777,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           style: Theme.of(context).textTheme.bodyMedium,
                                         ),
                                         Text(
-                                          '(8 tuần)',
+                                          '(${s.totalSessions} tuần)', // Hiển thị số tuần động
                                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                             color: Colors.grey[600],
                                           ),
@@ -771,9 +799,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     ),
                                   ),
 
-                                  // [BẮT ĐẦU SỬA LỖI]
-                                  // Thay thế logic "s.attendance" cũ
-                                  // Chỉ hiển thị điểm danh cho các buổi "Đã dạy"
                                   if (s.status == SessionStatus.daDay) ...[
                                     const SizedBox(width: 8),
                                     Container(
@@ -783,8 +808,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        // Hiển thị số lượng: (số sv có mặt) / (sĩ số lớp)
-                                        'Điểm danh: ${s.attendanceList?.length ?? 0}/${s.studentCount}',
+                                        // Hiển thị 3 / -
+                                        'Điểm danh: ${s.attendanceList?.length ?? 0}/${s.studentCount > 0 ? s.studentCount : '-'}',
                                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: Colors.blue.shade700,
                                           fontWeight: FontWeight.w500,
@@ -792,7 +817,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       ),
                                     ),
                                   ],
-                                  // [KẾT THÚC SỬA LỖI]
 
                                 ],
                               ),
