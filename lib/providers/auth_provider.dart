@@ -47,6 +47,7 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     clearError();
 
+    // Đã giữ lại phiên bản HEAD
     print('AuthProvider: Bắt đầu đăng nhập cho $email...');
     await AuthService.debugCheckFirestoreData();
 
@@ -55,6 +56,7 @@ class AuthProvider with ChangeNotifier {
       password: password,
     );
 
+    // Đã giữ lại phiên bản HEAD
     print('AuthProvider: Nhận kết quả từ AuthService: $result');
 
     if (result['success']) {
@@ -67,6 +69,7 @@ class AuthProvider with ChangeNotifier {
     } else {
       _setError(result['message']);
       _isAuthenticated = false;
+      // Đã giữ lại phiên bản HEAD
       print('❌ AuthProvider: Đăng nhập THẤT BẠI. Lý do: ${result['message']}');
       _setLoading(false);
       notifyListeners();
@@ -81,6 +84,7 @@ class AuthProvider with ChangeNotifier {
     _userData = null;
     _isAuthenticated = false;
     _setLoading(false);
+    notifyListeners();
   }
 
   Future<bool> resetPassword(String email) async {
@@ -94,11 +98,3 @@ class AuthProvider with ChangeNotifier {
     return result['success'];
   }
 }
-
-
-
-
-
-
-
-

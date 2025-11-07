@@ -26,12 +26,13 @@ class AuthService {
           throw Exception('Timeout: Không thể kết nối đến server. Vui lòng thử lại.');
         },
       );
-      
+
       print('✅ AuthService: Firebase Auth thành công, UID: ${userCredential.user?.uid}');
       final String uid = userCredential.user!.uid;
 
       // Ưu tiên lấy theo UID; nếu không có, fallback tìm theo email
       print('🔍 AuthService: Tìm kiếm user data trong Firestore với UID: $uid');
+      // Giữ phiên bản HEAD (dùng getUsersDataFromFirestore)
       final userModel = await getUsersDataFromFirestore(uid, fallbackEmail: email);
 
       if (userModel == null) {
@@ -41,17 +42,18 @@ class AuthService {
           'message': 'Không tìm thấy thông tin người dùng trong cơ sở dữ liệu.'
         };
       }
-      
+
       print('✅ AuthService: Tìm thấy user data: ${userModel.fullName} (${userModel.role})');
       return {'success': true, 'userData': userModel};
-      
+
     } on TimeoutException catch (e) {
       // Bắt riêng TimeoutException để thông báo rõ ràng hơn
       print('❌ AuthService: TimeoutException: $e');
       return {'success': false, 'message': 'Kết nối chậm. Vui lòng kiểm tra mạng và thử lại.'};
     } on firebase.FirebaseAuthException catch (e) {
+      // Giữ lại phần xử lý lỗi chi tiết của HEAD
       print('❌ AuthService: FirebaseAuthException - Code: ${e.code}, Message: ${e.message}');
-      
+
       String message;
       switch (e.code) {
         case 'user-not-found':
@@ -80,26 +82,28 @@ class AuthService {
         default:
           message = 'Đã có lỗi xảy ra: ${e.message ?? e.code}';
       }
-      
+
       return {'success': false, 'message': message};
     } catch (e) {
+      // Giữ lại log của HEAD
       print('❌ AuthService: General Exception: $e');
       return {'success': false, 'message': 'Lỗi không xác định: $e'};
     }
   }
 
+  // Giữ lại hoàn toàn hàm getUsersDataFromFirestore của HEAD
   static Future<Users?> getUsersDataFromFirestore(String uid, {String? fallbackEmail}) async {
     try {
       print('🔍 AuthService: getUsersDataFromFirestore - UID: $uid, FallbackEmail: $fallbackEmail');
-      
+
       final doc = await _firestore.collection('users').doc(uid).get();
       print('📄 AuthService: Document exists: ${doc.exists}');
-      
+
       if (doc.exists) {
         print('✅ AuthService: Tìm thấy user theo UID');
         return Users.fromJson(doc.id, doc.data()!);
       }
-      
+
       if (fallbackEmail != null) {
         print('🔍 AuthService: Tìm kiếm theo email: $fallbackEmail');
         final q = await _firestore
@@ -107,16 +111,16 @@ class AuthService {
             .where('email', isEqualTo: fallbackEmail)
             .limit(1)
             .get();
-        
+
         print('📄 AuthService: Query results count: ${q.docs.length}');
-        
+
         if (q.docs.isNotEmpty) {
           final d = q.docs.first;
           print('✅ AuthService: Tìm thấy user theo email');
           return Users.fromJson(d.id, d.data());
         }
       }
-      
+
       print('❌ AuthService: Không tìm thấy user data');
       return null;
     } catch (e) {
@@ -125,10 +129,13 @@ class AuthService {
     }
   }
 
+  // Gộp hàm signOut: Lấy của HEAD nhưng thêm 'print' từ Thanh
   static Future<void> signOut() async {
     await _auth.signOut();
+    print(' AuthService: User signed out from Firebase'); // <-- Lấy từ nhánh Thanh
   }
 
+  // Giữ lại toàn bộ các hàm mới từ HEAD
   static Future<Map<String, dynamic>> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -150,12 +157,12 @@ class AuthService {
   static Future<void> debugCheckFirestoreData() async {
     try {
       print('🔍 AuthService: Kiểm tra dữ liệu trong Firestore...');
-      
+
       // Kiểm tra Firebase Auth users trước
       print('🔐 AuthService: Kiểm tra Firebase Auth users...');
       final currentUsers = _auth.currentUser;
       print('👤 AuthService: Current Firebase Auth user: ${currentUsers?.email} (${currentUsers?.uid})');
-      
+
       if (currentUsers != null) {
         // Chỉ kiểm tra user document của chính mình
         final userDoc = await _firestore.collection('users').doc(currentUsers.uid).get();
@@ -163,14 +170,14 @@ class AuthService {
           print('✅ AuthService: Tìm thấy user data trong Firestore: ${userDoc.data()}');
         } else {
           print('❌ AuthService: Không tìm thấy user data trong Firestore cho UID: ${currentUsers.uid}');
-          
+
           // Thử tìm theo email nếu không tìm thấy theo UID
           final emailQuery = await _firestore
               .collection('users')
               .where('email', isEqualTo: currentUsers.email)
               .limit(1)
               .get();
-          
+
           if (emailQuery.docs.isNotEmpty) {
             print('✅ AuthService: Tìm thấy user theo email: ${emailQuery.docs.first.data()}');
           } else {
@@ -180,7 +187,7 @@ class AuthService {
       } else {
         print('❌ AuthService: Không có Firebase Auth user');
       }
-      
+
     } catch (e) {
       print('❌ AuthService: Error in debugCheckFirestoreData: $e');
     }
@@ -194,16 +201,16 @@ class AuthService {
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       print('🔄 AuthService: Thử đăng nhập lần $attempt/$maxRetries');
-      
+
       final result = await signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       if (result['success']) {
         return result;
       }
-      
+
       // Nếu là lỗi network và chưa hết số lần thử
       if (result['message'].contains('mạng') && attempt < maxRetries) {
         final delay = Duration(seconds: attempt * 2); // 2s, 4s, 6s
@@ -213,8 +220,7 @@ class AuthService {
         return result; // Trả về lỗi nếu không phải network error hoặc đã hết số lần thử
       }
     }
-    
+
     return {'success': false, 'message': 'Đã thử đăng nhập $maxRetries lần nhưng không thành công.'};
   }
 }
-

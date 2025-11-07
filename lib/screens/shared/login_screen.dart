@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 12), // Tạo khoảng cách giữa 2 nút
+                            const SizedBox(height: 12),
 
                             // 🧱 Nút “Quên mật khẩu?”
                             Align(

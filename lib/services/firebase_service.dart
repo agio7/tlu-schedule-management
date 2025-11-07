@@ -18,6 +18,7 @@ class FirebaseService {
   static CollectionReference get attendanceCollection => firestore.collection('attendance');
   static CollectionReference get leaveRequestsCollection => firestore.collection('leaveRequests');
   static CollectionReference get notificationsCollection => firestore.collection('notifications');
+  static CollectionReference get lessonsCollection => firestore.collection('lessons');
 
   // Helper methods for common operations
   static Future<void> addDocument(String collection, Map<String, dynamic> data) async {

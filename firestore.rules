@@ -61,7 +61,14 @@ service cloud.firestore {
 
     // Schedules - teachers can manage their own schedules content/progress
     match /schedules/{scheduleId} {
-      allow read: if isSignedIn();
+      allow read: if true; // Temporarily allow public read for testing
+      allow create, update, delete: if hasRole('admin') || hasRole('department_head') ||
+        (isSignedIn() && request.resource.data.teacherId == request.auth.uid);
+    }
+
+    // Lessons - allow public read for testing
+    match /lessons/{lessonId} {
+      allow read: if true; // Temporarily allow public read for testing
       allow create, update, delete: if hasRole('admin') || hasRole('department_head') ||
         (isSignedIn() && request.resource.data.teacherId == request.auth.uid);
     }
@@ -75,6 +82,15 @@ service cloud.firestore {
 
     // Leave requests
     match /leaveRequests/{reqId} {
+      allow read: if isSignedIn();
+      // Owner can create/cancel; approvers (admin/department_head) can approve
+      allow create: if isSignedIn() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if (isSignedIn() && request.resource.data.teacherId == request.auth.uid) || hasRole('admin') || hasRole('department_head');
+      allow delete: if hasRole('admin');
+    }
+
+    // Makeup requests
+    match /makeupRequests/{reqId} {
       allow read: if isSignedIn();
       // Owner can create/cancel; approvers (admin/department_head) can approve
       allow create: if isSignedIn() && request.resource.data.teacherId == request.auth.uid;

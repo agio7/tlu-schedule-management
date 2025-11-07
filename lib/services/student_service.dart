@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/students.dart';
+import '../models/classrooms.dart';
 import 'firebase_service.dart';
 
 class StudentService {
@@ -55,13 +56,37 @@ class StudentService {
         .where('email', isEqualTo: email)
         .limit(1)
         .get();
-    
+
     if (query.docs.isNotEmpty) {
       final doc = query.docs.first;
       return Students.fromJson(doc.id, doc.data());
     }
     return null;
   }
+
+  // === Added helper methods for widgets ===
+  static Future<List<Students>> getAllStudents() async {
+    final query = await _firestore.collection('students').get();
+    return query.docs.map((d) => Students.fromJson(d.id, d.data())).toList();
+  }
+
+  static Future<List<Students>> getStudentsByClassroomId(String classroomId) async {
+    final query = await _firestore
+        .collection('students')
+        .where('classroomId', isEqualTo: classroomId)
+        .get();
+    return query.docs.map((d) => Students.fromJson(d.id, d.data())).toList();
+  }
+
+  static Future<List<Students>> getStudentsByClassName(String className) async {
+    // Find classroom by name, then query students by classroomId
+    final classQuery = await _firestore
+        .collection('classrooms')
+        .where('name', isEqualTo: className)
+        .limit(1)
+        .get();
+    if (classQuery.docs.isEmpty) return [];
+    final classroomId = classQuery.docs.first.id;
+    return getStudentsByClassroomId(classroomId);
+  }
 }
-
-

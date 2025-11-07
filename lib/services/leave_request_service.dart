@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/leave_requests.dart';
+import '../models/leave_request.dart';
 import 'firebase_service.dart';
 
 class LeaveRequestService {
@@ -87,6 +88,52 @@ class LeaveRequestService {
       'updatedAt': Timestamp.now(),
     });
   }
+
+  // ===== Methods for new LeaveRequest model (Thanh branch compatibility) =====
+  static Future<List<LeaveRequest>> getAllLeaveRequests() async {
+    final snapshot = await _firestore.collection('leaveRequests').get();
+    return snapshot.docs
+        .map((d) => LeaveRequest.fromMap(d.data(), d.id))
+        .toList();
+  }
+
+  static Future<List<LeaveRequest>> getLeaveRequestsByTeacher(
+    String teacherId, {
+    List<String>? additionalTeacherIds,
+  }) async {
+    final ids = {
+      teacherId,
+      ...?additionalTeacherIds,
+    }.toList();
+
+    if (ids.isEmpty) return [];
+
+    // Firestore 'in' query supports up to 10 values; chunk if needed
+    final List<LeaveRequest> results = [];
+    const int chunkSize = 10;
+    for (int i = 0; i < ids.length; i += chunkSize) {
+      final chunk = ids.sublist(i, i + chunkSize > ids.length ? ids.length : i + chunkSize);
+      final snapshot = await _firestore
+          .collection('leaveRequests')
+          .where('teacherId', whereIn: chunk)
+          .get();
+      results.addAll(snapshot.docs.map((d) => LeaveRequest.fromMap(d.data(), d.id)));
+    }
+    return results;
+  }
+
+  static Future<String?> createLeaveRequest(LeaveRequest request) async {
+    final docRef = await _firestore.collection('leaveRequests').add(request.toMap());
+    return docRef.id;
+  }
+
+  static Stream<List<LeaveRequest>> getLeaveRequestsStreamByTeacher(String teacherId) {
+    return _firestore
+        .collection('leaveRequests')
+        .where('teacherId', isEqualTo: teacherId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((d) => LeaveRequest.fromMap(d.data(), d.id))
+            .toList());
+  }
 }
-
-

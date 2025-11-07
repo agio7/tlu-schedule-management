@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../admin/admin_dashboard.dart';
-import 'login_screen.dart'; // For logout fallback
+import '../teacher/teacher_dashboard.dart';
+import '../../auth/login_screen.dart'; // For logout fallback
 
 class RoleBasedDashboard extends StatelessWidget {
   final String userRole;
@@ -26,7 +27,7 @@ class RoleBasedDashboard extends StatelessWidget {
         dashboard = const Center(child: Text('Department Head Dashboard - Coming Soon'));
         break;
       case 'teacher':
-        dashboard = const Center(child: Text('Teacher Dashboard - Coming Soon'));
+        dashboard = const TeacherDashboard();
         break;
       default:
         // Fallback for unknown roles or not logged in
