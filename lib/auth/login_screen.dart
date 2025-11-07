@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/lesson_provider.dart';
-import '../screens/teacher/teacher_dashboard.dart';
-import '../screens/admin/admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,26 +44,30 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         if (success) {
-          // Load dữ liệu ngay sau khi đăng nhập
           final lessonProvider = Provider.of<LessonProvider>(context, listen: false);
-          // Reset streams trước để đảm bảo load lại dữ liệu
-          lessonProvider.resetStreams();
-          
           final user = authProvider.userData;
-          if (user != null && user.role == 'admin') {
-            // Admin: setup all streams và điều hướng trang admin
-            lessonProvider.resetStreams();
-            lessonProvider.setupAllRealtimeStreams(force: true);
-            context.go('/admin');
-          } else if (user != null && user.id.isNotEmpty) {
-            // Teacher: setup theo teacherId
-            lessonProvider.setupRealtimeStreams(user.id, force: true);
-            context.go('/dashboard');
+
+          lessonProvider.resetStreams();
+
+          if (user != null) {
+            switch (user.role) {
+              case 'admin':
+                lessonProvider.setupAllRealtimeStreams(force: true);
+                break;
+              case 'department_head':
+                lessonProvider.setupAllRealtimeStreams(force: true);
+                break;
+              default:
+                if (user.id.isNotEmpty) {
+                  lessonProvider.setupRealtimeStreams(user.id, force: true);
+                } else {
+                  lessonProvider.setupAllRealtimeStreams(force: true);
+                }
+            }
           } else {
-            // Fallback
             lessonProvider.setupAllRealtimeStreams(force: true);
-            context.go('/dashboard');
           }
+          context.go('/role-dashboard');
         } else {
           // Hiển thị lỗi đăng nhập
           ScaffoldMessenger.of(context).showSnackBar(
@@ -269,26 +271,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: BoxDecoration(
                             color: Colors.grey[100],
                             borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Column(
-                            children: [
-                              Text(
-                                'Thông tin demo:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Giảng viên: teacher@tlu.edu.vn / 123456',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              Text(
-                                'Admin: admin@tlu.edu.vn / 123456',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
                           ),
                         ),
                       ],

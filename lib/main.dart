@@ -12,8 +12,9 @@ import 'screens/teacher/lesson_attendance_screen.dart';
 import 'screens/teacher/attendance_screen.dart';
 import 'screens/teacher/leave_registration_screen.dart';
 import 'screens/teacher/reports_screen.dart';
-import 'screens/admin/admin_dashboard.dart';
+import 'screens/admin/responsive_admin_wrapper.dart';
 import 'auth/login_screen.dart';
+import 'screens/shared/role_based_dashboard.dart';
 
 import 'providers/lesson_provider.dart';
 import 'providers/auth_provider.dart';
@@ -87,9 +88,7 @@ final GoRouter _router = GoRouter(
 
     // Nếu đã đăng nhập và đang ở trang login
     if (authProvider.isAuthenticated && currentPath == '/login') {
-      final role = authProvider.userData?.role;
-      if (role == 'admin') return '/admin';
-      return '/dashboard';
+      return '/role-dashboard';
     }
 
     return null; // Không redirect
@@ -122,7 +121,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/admin',
-      builder: (context, state) => const AdminDashboard(),
+      builder: (context, state) => const ResponsiveAdminWrapper(),
     ),
     GoRoute(
       path: '/calendar',
@@ -154,6 +153,9 @@ final GoRouter _router = GoRouter(
       path: '/reports',
       builder: (context, state) => const ReportsScreen(),
     ),
-
+    GoRoute(
+      path: '/role-dashboard',
+      builder: (context, state) => const RoleBasedDashboard(),
+    ),
   ],
 );

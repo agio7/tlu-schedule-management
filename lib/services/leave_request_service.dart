@@ -52,9 +52,14 @@ class LeaveRequestService {
     return docRef.id;
   }
 
-  // Cập nhật leave request
+  // Cập nhật leave request bằng model
   static Future<void> updateLeaveRequest(String leaveRequestId, LeaveRequests leaveRequest) async {
     await _firestore.collection('leaveRequests').doc(leaveRequestId).update(leaveRequest.toJson());
+  }
+
+  // Cập nhật leave request bằng Map (phục vụ HOD flows)
+  static Future<void> updateLeaveRequestData(String leaveRequestId, Map<String, dynamic> data) async {
+    await _firestore.collection('leaveRequests').doc(leaveRequestId).update(data);
   }
 
   // Xóa leave request

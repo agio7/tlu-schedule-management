@@ -10,6 +10,7 @@ class LeaveRequests {
   final String id;
   final String teacherId;
   final String scheduleId;
+  final String? lessonId;
   final String reason;
   final LeaveRequestStatus status;
   final String? approverId;
@@ -22,6 +23,7 @@ class LeaveRequests {
     required this.id,
     required this.teacherId,
     required this.scheduleId,
+    this.lessonId,
     required this.reason,
     required this.status,
     this.approverId,
@@ -46,6 +48,7 @@ class LeaveRequests {
       id: id,
       teacherId: json['teacherId'] as String? ?? '',
       scheduleId: json['scheduleId'] as String? ?? '',
+      lessonId: json['lessonId'] as String?,
       reason: json['reason'] as String? ?? '',
       status: LeaveRequestStatus.values.firstWhere(
         (e) => e.toString() == 'LeaveRequestStatus.${json['status']}',
@@ -63,6 +66,7 @@ class LeaveRequests {
     return {
       'teacherId': teacherId,
       'scheduleId': scheduleId,
+      'lessonId': lessonId,
       'reason': reason,
       'status': status.toString().split('.').last,
       'approverId': approverId,

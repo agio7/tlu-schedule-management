@@ -222,4 +222,16 @@ class LessonService {
       }).toList();
     });
   }
+
+  // Stream tất cả lessons (real-time updates) - phục vụ HOD cache loader
+  static Stream<List<Lesson>> getLessonsStream() {
+    return _firestore
+        .collection('lessons')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Lesson.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
+  }
 }

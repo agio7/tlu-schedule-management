@@ -51,9 +51,14 @@ class MakeupRequestService {
     return docRef.id;
   }
 
-  // Cập nhật makeup request
+  // Cập nhật makeup request bằng model
   static Future<void> updateMakeupRequest(String makeupRequestId, MakeupRequests makeupRequest) async {
     await _firestore.collection('makeupRequests').doc(makeupRequestId).update(makeupRequest.toJson());
+  }
+
+  // Cập nhật makeup request bằng Map (phục vụ HOD flows)
+  static Future<void> updateMakeupRequestData(String makeupRequestId, Map<String, dynamic> data) async {
+    await _firestore.collection('makeupRequests').doc(makeupRequestId).update(data);
   }
 
   // Xóa makeup request

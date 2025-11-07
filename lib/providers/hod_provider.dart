@@ -691,7 +691,7 @@ class AppState extends ChangeNotifier {
     };
 
     try {
-      await LeaveRequestService.updateLeaveRequest(request.id, dataToUpdate);
+      await LeaveRequestService.updateLeaveRequestData(request.id, dataToUpdate);
       print('✅ Successfully approved leave ${request.id}');
       await loadDataFromFirebase(); // Tải lại
     } catch (e) {
@@ -712,7 +712,7 @@ class AppState extends ChangeNotifier {
     };
 
     try {
-      await LeaveRequestService.updateLeaveRequest(request.id, dataToUpdate);
+      await LeaveRequestService.updateLeaveRequestData(request.id, dataToUpdate);
       print('✅ Successfully rejected leave ${request.id}');
       await loadDataFromFirebase(); // Tải lại
     } catch (e) {
@@ -733,7 +733,7 @@ class AppState extends ChangeNotifier {
     };
 
     try {
-      await MakeupRequestService.updateMakeupRequest(request.id, dataToUpdate);
+      await MakeupRequestService.updateMakeupRequestData(request.id, dataToUpdate);
       print('✅ Successfully approved makeup ${request.id}');
       await loadDataFromFirebase(); // Tải lại
     } catch (e) {
@@ -754,7 +754,7 @@ class AppState extends ChangeNotifier {
     };
 
     try {
-      await MakeupRequestService.updateMakeupRequest(request.id, dataToUpdate);
+      await MakeupRequestService.updateMakeupRequestData(request.id, dataToUpdate);
       print('✅ Successfully rejected makeup ${request.id}');
       await loadDataFromFirebase(); // Tải lại
     } catch (e) {

@@ -48,12 +48,10 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.3
 
-  
   # HTTP & API
   dio: ^5.4.3+1
   
   # Local Storage
-  shared_preferences: ^2.2.3
   sqflite: ^2.3.3+1
 
   # UI Components
